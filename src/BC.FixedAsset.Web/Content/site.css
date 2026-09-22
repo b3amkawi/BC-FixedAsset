@@ -45,7 +45,6 @@ button,a,input,select,textarea{font:inherit}
 .page-head h1{font-size:1.65rem;color:#102f59;margin:0}
 .page-head p{margin:5px 0 0;color:var(--muted-foreground)}
 .page-actions,.actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
-.survey-import-file{max-width:220px;font-size:.78rem;color:#294766}
 
 .card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 1px 3px #0b25400b}
 .card-head{padding:18px 22px 12px}

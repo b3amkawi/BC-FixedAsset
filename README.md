@@ -24,7 +24,7 @@ The Web Forms presentation layer in v3.1 is synchronized with the currently depl
 - Owner-only edit/delete before submission; administrators can inspect all records
 - Asset Manager review queue with Approve/Return and mandatory return reason
 - Finance review queue
-- Detail popup, thumbnail list, Excel import template and draft import, Excel-compatible export and printable QR asset tag
+- Detail popup, thumbnail list, Excel-compatible export and printable QR asset tag
 - Loading/progress overlay for server operations
 - Fixed Asset Register
 - Configurable Fixed Asset number scheme and transactional running number
