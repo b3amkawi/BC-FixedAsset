@@ -29,9 +29,29 @@ DECLARE @Position nvarchar(150)=N'System Administrator';
 BEGIN TRY
     BEGIN TRAN;
 
+    IF NOT EXISTS(SELECT 1 FROM sec.Roles WHERE RoleCode=N'SYSTEM_ADMIN')
+        INSERT sec.Roles(RoleCode,RoleName,IsSystemRole,IsActive)
+        VALUES(N'SYSTEM_ADMIN',N'System Administrator',1,1);
+    ELSE
+        UPDATE sec.Roles SET IsActive=1 WHERE RoleCode=N'SYSTEM_ADMIN';
+
+    IF NOT EXISTS(SELECT 1 FROM sec.Applications WHERE ApplicationCode=N'FIXED_ASSET')
+        INSERT sec.Applications
+        (ApplicationCode,NameTh,NameEn,DescriptionTh,DescriptionEn,IconText,TargetUrl,DisplayOrder,IsActive)
+        VALUES
+        (N'FIXED_ASSET',N'BC Fixed Asset',N'BC Fixed Asset',N'จัดการ Asset Survey การอนุมัติ และทะเบียนทรัพย์สิน',N'Manage asset surveys, approvals, and the asset register',N'FA',N'~/FixedAsset/Dashboard.aspx',1,1);
+    ELSE
+        UPDATE sec.Applications SET IsActive=1 WHERE ApplicationCode=N'FIXED_ASSET';
+
+    IF NOT EXISTS(SELECT 1 FROM sec.Applications WHERE ApplicationCode=N'ADMIN')
+        INSERT sec.Applications
+        (ApplicationCode,NameTh,NameEn,DescriptionTh,DescriptionEn,IconText,TargetUrl,DisplayOrder,IsActive)
+        VALUES
+        (N'ADMIN',N'BC Administration',N'BC Administration',N'บริหาร Application Portal ผู้ใช้ สิทธิ์ และ Master Data',N'Manage applications, users, access, and master data',N'AD',N'~/Admin/Dashboard.aspx',2,1);
+    ELSE
+        UPDATE sec.Applications SET IsActive=1 WHERE ApplicationCode=N'ADMIN';
+
     DECLARE @AdminRoleId int=(SELECT RoleId FROM sec.Roles WHERE RoleCode=N'SYSTEM_ADMIN' AND IsActive=1);
-    IF @AdminRoleId IS NULL
-        THROW 50001,N'SYSTEM_ADMIN role was not found. Run the database seed/upgrade scripts first.',1;
 
     DECLARE @UserId int=(SELECT UserId FROM sec.Users WHERE UserName=@UserName);
 
