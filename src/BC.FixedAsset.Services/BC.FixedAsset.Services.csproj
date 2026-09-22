@@ -1,0 +1,8 @@
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup><Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration><Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform><ProjectGuid>{A52E03D5-2E6B-4BA6-A111-4BC07C5A1003}</ProjectGuid><OutputType>Library</OutputType><RootNamespace>BC.FixedAsset.Services</RootNamespace><AssemblyName>BC.FixedAsset.Services</AssemblyName><TargetFrameworkVersion>v4.8</TargetFrameworkVersion><LangVersion>latest</LangVersion></PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' "><DebugSymbols>true</DebugSymbols><DebugType>full</DebugType><OutputPath>bin\Debug\</OutputPath></PropertyGroup><PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' "><Optimize>true</Optimize><OutputPath>bin\Release\</OutputPath></PropertyGroup>
+  <ItemGroup><Reference Include="System" /><Reference Include="System.Core" /><Reference Include="System.Data" /><Reference Include="System.Web" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="..\BC.FixedAsset.Core\BC.FixedAsset.Core.csproj"><Project>{A52E03D5-2E6B-4BA6-A111-4BC07C5A1001}</Project><Name>BC.FixedAsset.Core</Name></ProjectReference><ProjectReference Include="..\BC.FixedAsset.Data\BC.FixedAsset.Data.csproj"><Project>{A52E03D5-2E6B-4BA6-A111-4BC07C5A1002}</Project><Name>BC.FixedAsset.Data</Name></ProjectReference></ItemGroup>
+  <ItemGroup><Compile Include="ApplicationServices.cs" /><Compile Include="Properties\AssemblyInfo.cs" /></ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

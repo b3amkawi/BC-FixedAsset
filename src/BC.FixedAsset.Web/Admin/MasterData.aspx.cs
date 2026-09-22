@@ -1,0 +1,1 @@
+using System.Collections.Generic;namespace BC.FixedAsset.Web.Admin{public partial class MasterData:SecurePage{public IDictionary<string,int> Groups {get;}=new Dictionary<string,int>{{"Companies",1},{"Divisions",3},{"Departments",9},{"Asset Categories",10},{"UOM",5},{"Buildings",3},{"Floors",8},{"Rooms",14}};}}
