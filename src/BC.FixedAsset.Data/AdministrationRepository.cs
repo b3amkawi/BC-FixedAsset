@@ -69,7 +69,7 @@ namespace BC.FixedAsset.Data
                 try
                 {
                     const string userSql=@"INSERT sec.Users(UserName,Email,Phone,FirstName,LastName,Position,DivisionId,DepartmentId,ProfileImagePath,AccountType,MustChangePassword,IsActive)
-                        VALUES(@UserName,@Email,@Phone,@FirstName,@LastName,@Position,COALESCE(@DivisionId,(SELECT DivisionId FROM mst.Departments WHERE DepartmentId=@DepartmentId)),@DepartmentId,'~/Assets/default-profile.svg',0,1,1);SELECT CAST(SCOPE_IDENTITY() AS int);";
+                        VALUES(@UserName,@Email,@Phone,@FirstName,@LastName,@Position,COALESCE(@DivisionId,(SELECT DivisionId FROM mst.Departments WHERE DepartmentId=@DepartmentId)),@DepartmentId,'~/Assets/default-profile.svg',0,0,1);SELECT CAST(SCOPE_IDENTITY() AS int);";
                     int id;using(var cmd=new SqlCommand(userSql,c,tx)){AddUserParameters(cmd,user);id=Convert.ToInt32(cmd.ExecuteScalar());}
                     SaveCredential(c,tx,id,password,passwordExpiresUtc);
                     ReplaceApplicationRole(c,tx,id,"FIXED_ASSET",fixedAssetRoleId);
@@ -85,11 +85,11 @@ namespace BC.FixedAsset.Data
             {
                 try
                 {
-                    const string sql = @"UPDATE sec.Users SET UserName=@UserName,Email=@Email,Phone=@Phone,FirstName=@FirstName,LastName=@LastName,Position=@Position,DivisionId=COALESCE(@DivisionId,(SELECT DivisionId FROM mst.Departments WHERE DepartmentId=@DepartmentId)),DepartmentId=@DepartmentId,IsActive=@IsActive,MustChangePassword=CASE WHEN @ResetPassword=1 THEN 1 ELSE MustChangePassword END,ModifiedUtc=SYSUTCDATETIME() WHERE UserId=@UserId;";
+                    const string sql = @"UPDATE sec.Users SET UserName=@UserName,Email=@Email,Phone=@Phone,FirstName=@FirstName,LastName=@LastName,Position=@Position,DivisionId=COALESCE(@DivisionId,(SELECT DivisionId FROM mst.Departments WHERE DepartmentId=@DepartmentId)),DepartmentId=@DepartmentId,IsActive=@IsActive,MustChangePassword=0,ModifiedUtc=SYSUTCDATETIME() WHERE UserId=@UserId;";
                     using (var command = new SqlCommand(sql, connection, transaction))
                     {
                         AddUserParameters(command, model.User); command.Parameters.Add(Db.Parameter("@UserId", model.User.UserId, SqlDbType.Int));
-                        command.Parameters.Add(Db.Parameter("@IsActive", model.User.IsActive, SqlDbType.Bit)); command.Parameters.Add(Db.Parameter("@ResetPassword", replacementPassword != null, SqlDbType.Bit));
+                        command.Parameters.Add(Db.Parameter("@IsActive", model.User.IsActive, SqlDbType.Bit));
                         if (command.ExecuteNonQuery() != 1) throw new InvalidOperationException("User was not found.");
                     }
                     if (replacementPassword != null) SaveCredential(connection, transaction, model.User.UserId, replacementPassword, passwordExpiresUtc);

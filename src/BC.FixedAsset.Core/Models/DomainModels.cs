@@ -136,19 +136,6 @@ namespace BC.FixedAsset.Core.Models
         public bool IsActive { get; set; }
     }
 
-    public sealed class PasswordPolicy
-    {
-        public int MinimumLength { get; set; } = 12;
-        public bool RequireUppercase { get; set; } = true;
-        public bool RequireLowercase { get; set; } = true;
-        public bool RequireNumber { get; set; } = true;
-        public bool RequireSpecialCharacter { get; set; } = true;
-        public int PasswordHistoryCount { get; set; } = 5;
-        public int MaximumFailedAttempts { get; set; } = 5;
-        public int LockoutMinutes { get; set; } = 15;
-        public int ExpiryDays { get; set; } = 90;
-    }
-
     public sealed class AuthenticationResult
     {
         public bool Succeeded { get; set; }

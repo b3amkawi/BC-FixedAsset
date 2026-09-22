@@ -28,11 +28,10 @@
       <div class="field"><label>ชื่อจริง</label><asp:TextBox ID="txtFirstName" runat="server" MaxLength="100"/></div>
       <div class="field"><label>นามสกุล</label><asp:TextBox ID="txtLastName" runat="server" MaxLength="100"/></div>
       <div class="field"><label>Department / Section</label><asp:DropDownList ID="ddlDepartment" runat="server"/></div>
-      <div class="field"><label>Password Expiry</label><asp:DropDownList ID="ddlExpiry" runat="server"><asp:ListItem Value="30">30 วัน</asp:ListItem><asp:ListItem Value="60">60 วัน</asp:ListItem><asp:ListItem Value="90" Selected="true">90 วัน</asp:ListItem><asp:ListItem Value="0">ไม่หมดอายุ</asp:ListItem></asp:DropDownList></div>
       <div class="field"><label>BC Fixed Asset Role</label><asp:DropDownList ID="ddlFixedAssetRole" runat="server"/></div>
       <div class="field"><label>BC Administration Role</label><asp:DropDownList ID="ddlAdministrationRole" runat="server"/></div>
       <div class="field"><label>สถานะบัญชี</label><asp:CheckBox ID="chkIsActive" runat="server" Text=" เปิดใช้งาน / Active" Checked="true"/></div>
-      <div class="field full"><label>รหัสผ่านเริ่มต้น / รหัสผ่านใหม่</label><asp:TextBox ID="txtInitialPassword" runat="server" TextMode="Password" autocomplete="new-password"/><small>ผู้ใช้ใหม่ต้องระบุรหัสผ่าน ส่วนการแก้ไขให้เว้นว่างหากไม่ต้องการ Reset Password — อย่างน้อย 12 ตัว พร้อม A-Z, a-z, ตัวเลข และอักขระพิเศษ</small></div>
+      <div class="field full"><label>รหัสผ่านเริ่มต้น / รหัสผ่านใหม่</label><asp:TextBox ID="txtInitialPassword" runat="server" TextMode="Password" autocomplete="new-password"/><small>ผู้ใช้ใหม่ต้องระบุรหัสผ่าน ส่วนการแก้ไขให้เว้นว่างหากไม่ต้องการ Reset Password</small></div>
       <div class="field full actions"><asp:Button ID="btnSave" runat="server" CssClass="button primary" Text="บันทึก" OnClick="Save_Click"/><asp:Button ID="btnCancel" runat="server" CssClass="button" Text="ยกเลิก" OnClick="Cancel_Click" CausesValidation="false"/></div>
     </div>
   </asp:Panel>

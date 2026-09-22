@@ -30,13 +30,12 @@ IF NOT EXISTS(SELECT 1 FROM mst.Rooms WHERE FloorId=@HO3 AND RoomCode='IT') INSE
 IF NOT EXISTS(SELECT 1 FROM mst.Rooms WHERE FloorId=@F11 AND RoomCode='VISION') INSERT mst.Rooms(FloorId,RoomCode,RoomName) VALUES(@F11,'VISION',N'Vision Lab');
 IF NOT EXISTS(SELECT 1 FROM mst.Rooms WHERE FloorId=@WHAG AND RoomCode='LOAD') INSERT mst.Rooms(FloorId,RoomCode,RoomName) VALUES(@WHAG,'LOAD',N'Loading Bay');
 GO
-IF NOT EXISTS(SELECT 1 FROM sec.PasswordPolicies WHERE IsActive=1) INSERT sec.PasswordPolicies(PolicyName,MinimumLength,RequireUppercase,RequireLowercase,RequireNumber,RequireSpecialCharacter,PasswordHistoryCount,MaximumFailedAttempts,LockoutMinutes,ExpiryDays) VALUES(N'BC Standard',12,1,1,1,1,5,5,15,90);
 INSERT sec.Roles(RoleCode,RoleName,IsSystemRole) SELECT v.Code,v.Name,1 FROM(VALUES('SYSTEM_ADMIN',N'System Administrator'),('SURVEYOR',N'Asset Surveyor'),('ASSET_MANAGER',N'Asset Manager'),('FINANCE',N'Finance Reviewer'),('MANAGEMENT',N'Management Viewer'))v(Code,Name) WHERE NOT EXISTS(SELECT 1 FROM sec.Roles r WHERE r.RoleCode=v.Code);
 IF NOT EXISTS(SELECT 1 FROM sec.Applications WHERE ApplicationCode='FIXED_ASSET') INSERT sec.Applications(ApplicationCode,NameTh,NameEn,DescriptionTh,DescriptionEn,IconText,TargetUrl,DisplayOrder,IsActive) VALUES('FIXED_ASSET',N'BC Fixed Asset',N'BC Fixed Asset',N'จัดการ Asset Survey การอนุมัติ และทะเบียนทรัพย์สิน',N'Manage asset surveys, approvals, and the asset register','FA','~/FixedAsset/Dashboard.aspx',1,1);
 IF NOT EXISTS(SELECT 1 FROM sec.Applications WHERE ApplicationCode='ADMIN') INSERT sec.Applications(ApplicationCode,NameTh,NameEn,DescriptionTh,DescriptionEn,IconText,TargetUrl,DisplayOrder,IsActive) VALUES('ADMIN',N'BC Administration',N'BC Administration',N'บริหาร Application Portal ผู้ใช้ สิทธิ์ และ Master Data',N'Manage applications, users, access, and master data','AD','~/Admin/Dashboard.aspx',2,1);
 GO
-IF NOT EXISTS(SELECT 1 FROM sec.Users WHERE UserName='admin') INSERT sec.Users(UserName,Email,FirstName,LastName,Position,DepartmentId,ProfileImagePath,AccountType,MustChangePassword,IsActive) VALUES('admin','admin@bettercode.co.th',N'System',N'Administrator',N'System Administrator',(SELECT DepartmentId FROM mst.Departments WHERE DepartmentCode='IT'),'~/Assets/default-profile.svg',0,1,1);
-UPDATE sec.Users SET AccountType=0,MustChangePassword=1,IsActive=1,ModifiedUtc=SYSUTCDATETIME() WHERE UserName='admin';
+IF NOT EXISTS(SELECT 1 FROM sec.Users WHERE UserName='admin') INSERT sec.Users(UserName,Email,FirstName,LastName,Position,DepartmentId,ProfileImagePath,AccountType,MustChangePassword,IsActive) VALUES('admin','admin@bettercode.co.th',N'System',N'Administrator',N'System Administrator',(SELECT DepartmentId FROM mst.Departments WHERE DepartmentCode='IT'),'~/Assets/default-profile.svg',0,0,1);
+UPDATE sec.Users SET AccountType=0,MustChangePassword=0,IsActive=1,ModifiedUtc=SYSUTCDATETIME() WHERE UserName='admin';
 DECLARE @AdminUser int=(SELECT UserId FROM sec.Users WHERE UserName='admin'),@AdminRole int=(SELECT RoleId FROM sec.Roles WHERE RoleCode='SYSTEM_ADMIN');
 MERGE sec.UserCredentials AS target
 USING (SELECT @AdminUser AS UserId) AS source ON target.UserId=source.UserId
@@ -44,11 +43,11 @@ WHEN MATCHED THEN
   UPDATE SET PasswordHash=0x302F84772BC4F9860671C029B8AB6D541F12E7D11E13E63F3B38349F23D07495,
              PasswordSalt=0x95E2C631A525C6E4EA495D432CC08CC3756E4FADE77A28C35E173DCBE1E545A8,
              PasswordIterations=120000,PasswordAlgorithm=N'PBKDF2-HMAC-SHA256',
-             PasswordChangedUtc=SYSUTCDATETIME(),PasswordExpiresUtc=DATEADD(DAY,90,SYSUTCDATETIME()),
+             PasswordChangedUtc=SYSUTCDATETIME(),PasswordExpiresUtc=NULL,
              FailedLoginCount=0,LockedUntilUtc=NULL
 WHEN NOT MATCHED THEN
   INSERT(UserId,PasswordHash,PasswordSalt,PasswordIterations,PasswordAlgorithm,PasswordChangedUtc,PasswordExpiresUtc,FailedLoginCount)
-  VALUES(@AdminUser,0x302F84772BC4F9860671C029B8AB6D541F12E7D11E13E63F3B38349F23D07495,0x95E2C631A525C6E4EA495D432CC08CC3756E4FADE77A28C35E173DCBE1E545A8,120000,N'PBKDF2-HMAC-SHA256',SYSUTCDATETIME(),DATEADD(DAY,90,SYSUTCDATETIME()),0);
+  VALUES(@AdminUser,0x302F84772BC4F9860671C029B8AB6D541F12E7D11E13E63F3B38349F23D07495,0x95E2C631A525C6E4EA495D432CC08CC3756E4FADE77A28C35E173DCBE1E545A8,120000,N'PBKDF2-HMAC-SHA256',SYSUTCDATETIME(),NULL,0);
 INSERT sec.UserApplicationRoles(UserId,ApplicationId,RoleId) SELECT @AdminUser,a.ApplicationId,@AdminRole FROM sec.Applications a WHERE a.ApplicationCode IN('FIXED_ASSET','ADMIN') AND NOT EXISTS(SELECT 1 FROM sec.UserApplicationRoles x WHERE x.UserId=@AdminUser AND x.ApplicationId=a.ApplicationId AND x.RoleId=@AdminRole);
 DECLARE @Company int=(SELECT CompanyId FROM mst.Companies WHERE CompanyCode='BC');
 IF NOT EXISTS(SELECT 1 FROM fa.AssetNumberSchemes WHERE CompanyId=@Company AND IsActive=1) INSERT fa.AssetNumberSchemes(CompanyId,SchemeName,Pattern,SequenceDigits,SequenceScope,ResetPolicy,StartValue,EffectiveDate) VALUES(@Company,N'BC Standard Asset Number',N'{COMPANY}-{CATEGORY}-{YEAR}-{SEQ}',4,N'Company + Category + Year',N'Yearly',1,'2026-01-01');

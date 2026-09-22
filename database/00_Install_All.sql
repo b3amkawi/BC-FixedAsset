@@ -13,6 +13,7 @@
 :r .\03_Seed_Data.sql
 :r .\05_Upgrade_v3.sql
 :r .\06_Upgrade_v4.sql
+:r .\09_Remove_Password_Policy.sql
 
 PRINT N'BCFixedAsset installation completed.';
 GO

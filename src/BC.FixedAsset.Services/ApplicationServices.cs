@@ -22,25 +22,10 @@ namespace BC.FixedAsset.Services
             if (record.User.AccountType != AccountType.Local) return Failed("This account must sign in through corporate SSO.");
             if (record.LockedUntilUtc.HasValue && record.LockedUntilUtc.Value > DateTime.UtcNow) return Failed("Account is temporarily locked.");
 
-            var policy = GetPasswordPolicy();
             var valid = PasswordHasher.Verify(password, record.PasswordHash, record.PasswordSalt, record.PasswordIterations);
-            _users.RecordLoginResult(record.User.UserId, valid, policy.MaximumFailedAttempts, policy.LockoutMinutes);
+            _users.RecordLoginResult(record.User.UserId, valid, 5, 15);
             if (!valid) return Failed("Invalid username or password.");
-            if (record.PasswordExpiresUtc.HasValue && record.PasswordExpiresUtc.Value <= DateTime.UtcNow) record.User.MustChangePassword = true;
             return new AuthenticationResult { Succeeded = true, User = record.User };
-        }
-
-        public PasswordPolicy GetPasswordPolicy() => _users.GetActivePasswordPolicy();
-
-        public IList<string> ValidatePassword(string password, PasswordPolicy policy)
-        {
-            var errors = new List<string>(); password = password ?? string.Empty;
-            if (password.Length < policy.MinimumLength) errors.Add($"Password must contain at least {policy.MinimumLength} characters.");
-            if (policy.RequireUppercase && !Regex.IsMatch(password, "[A-Z]")) errors.Add("Password must contain an uppercase letter.");
-            if (policy.RequireLowercase && !Regex.IsMatch(password, "[a-z]")) errors.Add("Password must contain a lowercase letter.");
-            if (policy.RequireNumber && !Regex.IsMatch(password, "[0-9]")) errors.Add("Password must contain a number.");
-            if (policy.RequireSpecialCharacter && !Regex.IsMatch(password, "[^a-zA-Z0-9]")) errors.Add("Password must contain a special character.");
-            return errors;
         }
 
         private static AuthenticationResult Failed(string message) => new AuthenticationResult { Succeeded = false, ErrorMessage = message };
@@ -49,7 +34,6 @@ namespace BC.FixedAsset.Services
     public sealed class UserProfileService
     {
         private readonly UserRepository _users = new UserRepository();
-        private readonly AuthenticationService _authentication = new AuthenticationService();
 
         public void UpdateProfile(UserIdentity user)
         {
@@ -61,19 +45,12 @@ namespace BC.FixedAsset.Services
         public void ChangePassword(UserIdentity user, string currentPassword, string newPassword, string confirmation)
         {
             if (newPassword != confirmation) throw new ArgumentException("New password and confirmation do not match.");
+            if (string.IsNullOrWhiteSpace(newPassword)) throw new ArgumentException("New password is required.");
             var current = _users.FindForAuthentication(user.UserName);
             if (current == null || !PasswordHasher.Verify(currentPassword, current.PasswordHash, current.PasswordSalt, current.PasswordIterations))
                 throw new ArgumentException("Current password is incorrect.");
-            var policy = _authentication.GetPasswordPolicy();
-            var errors = _authentication.ValidatePassword(newPassword, policy);
-            if (errors.Count > 0) throw new ArgumentException(string.Join(" ", errors));
-            if (PasswordHasher.Verify(newPassword, current.PasswordHash, current.PasswordSalt, current.PasswordIterations))
-                throw new ArgumentException("The new password cannot be the same as the current password.");
-            foreach (var previous in _users.GetPasswordHistory(user.UserId))
-                if (PasswordHasher.Verify(newPassword, previous.Hash, previous.Salt, previous.Iterations))
-                    throw new ArgumentException("This password was used recently. Please choose a different password.");
             var hash = PasswordHasher.Hash(newPassword);
-            _users.ChangePassword(user.UserId, hash, policy.ExpiryDays <= 0 ? (DateTime?)null : DateTime.UtcNow.AddDays(policy.ExpiryDays), policy.PasswordHistoryCount);
+            _users.ChangePassword(user.UserId, hash);
             user.MustChangePassword = false;
         }
     }
@@ -151,7 +128,6 @@ namespace BC.FixedAsset.Services
     public sealed class AdministrationService
     {
         private readonly AdministrationRepository _repository = new AdministrationRepository();
-        private readonly AuthenticationService _authentication = new AuthenticationService();
         public DataTable GetApplications() => _repository.GetApplications();
         public DataTable GetUsers() => _repository.GetUsers();
         public DataTable GetDepartments() => _repository.GetDepartments();
@@ -169,16 +145,15 @@ namespace BC.FixedAsset.Services
             (value.StartsWith("~/", StringComparison.Ordinal) ||
              (value.StartsWith("/", StringComparison.Ordinal) && !value.StartsWith("//", StringComparison.Ordinal) && !value.StartsWith("/\\", StringComparison.Ordinal)) ||
              value.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
-        public int CreateLocalUser(UserIdentity user, string initialPassword, int expiryDays, int? fixedAssetRoleId, int? administrationRoleId)
+        public int CreateLocalUser(UserIdentity user, string initialPassword, int? fixedAssetRoleId, int? administrationRoleId)
         {
             ValidateUser(user);
-            var errors = _authentication.ValidatePassword(initialPassword, _authentication.GetPasswordPolicy());
-            if (errors.Count > 0) throw new ArgumentException(string.Join(" ", errors));
+            if (string.IsNullOrWhiteSpace(initialPassword)) throw new ArgumentException("Initial password is required.");
             var hash = PasswordHasher.Hash(initialPassword);
-            return _repository.CreateLocalUser(user, hash, expiryDays <= 0 ? (DateTime?)null : DateTime.UtcNow.AddDays(expiryDays), fixedAssetRoleId, administrationRoleId);
+            return _repository.CreateLocalUser(user, hash, null, fixedAssetRoleId, administrationRoleId);
         }
 
-        public void UpdateLocalUser(UserAdministrationModel model, string replacementPassword, int expiryDays, int currentUserId)
+        public void UpdateLocalUser(UserAdministrationModel model, string replacementPassword, int currentUserId)
         {
             if (model == null || model.User == null) throw new ArgumentException("User is required.");
             ValidateUser(model.User);
@@ -187,11 +162,9 @@ namespace BC.FixedAsset.Services
             PasswordHashResult hash = null;
             if (!string.IsNullOrWhiteSpace(replacementPassword))
             {
-                var errors = _authentication.ValidatePassword(replacementPassword, _authentication.GetPasswordPolicy());
-                if (errors.Count > 0) throw new ArgumentException(string.Join(" ", errors));
                 hash = PasswordHasher.Hash(replacementPassword);
             }
-            _repository.UpdateLocalUser(model, hash, expiryDays <= 0 ? (DateTime?)null : DateTime.UtcNow.AddDays(expiryDays));
+            _repository.UpdateLocalUser(model, hash, null);
         }
 
         public bool DeleteUser(int userId, int currentUserId)

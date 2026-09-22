@@ -59,9 +59,9 @@ The seed creates a first-use administrator:
 
 - Username: `admin`
 - Temporary password: `BC-Admin@2026!`
-- Password change: required at first sign-in
+- Password change: optional
 
-Change the temporary password immediately. You can also reset it from an elevated PowerShell prompt before first use:
+You can set another administrator password from a PowerShell prompt:
 
 ```powershell
 .\tools\Set-InitialAdminPassword.ps1 -Password "Replace-With-A-Strong-Password"

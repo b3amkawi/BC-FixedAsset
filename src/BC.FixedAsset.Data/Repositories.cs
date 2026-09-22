@@ -53,37 +53,6 @@ namespace BC.FixedAsset.Data
             }
         }
 
-        public PasswordPolicy GetActivePasswordPolicy()
-        {
-            const string sql = @"SELECT TOP(1) MinimumLength,RequireUppercase,RequireLowercase,RequireNumber,RequireSpecialCharacter,
-                PasswordHistoryCount,MaximumFailedAttempts,LockoutMinutes,ExpiryDays FROM sec.PasswordPolicies WHERE IsActive=1 ORDER BY PolicyId DESC;";
-            using (var connection = Db.OpenConnection()) using (var command = new SqlCommand(sql, connection)) using (var reader = command.ExecuteReader())
-            {
-                if (!reader.Read()) return new PasswordPolicy();
-                return new PasswordPolicy
-                {
-                    MinimumLength=Convert.ToInt32(reader[0]),RequireUppercase=Convert.ToBoolean(reader[1]),RequireLowercase=Convert.ToBoolean(reader[2]),
-                    RequireNumber=Convert.ToBoolean(reader[3]),RequireSpecialCharacter=Convert.ToBoolean(reader[4]),PasswordHistoryCount=Convert.ToInt32(reader[5]),
-                    MaximumFailedAttempts=Convert.ToInt32(reader[6]),LockoutMinutes=Convert.ToInt32(reader[7]),ExpiryDays=Convert.ToInt32(reader[8])
-                };
-            }
-        }
-
-        public IList<PasswordHashResult> GetPasswordHistory(int userId)
-        {
-            const string sql = @"SELECT PasswordHash,PasswordSalt,PasswordIterations FROM sec.PasswordHistory WHERE UserId=@UserId ORDER BY PasswordHistoryId DESC;";
-            var items = new List<PasswordHashResult>();
-            using (var connection = Db.OpenConnection()) using (var command = new SqlCommand(sql, connection))
-            {
-                command.Parameters.Add(Db.Parameter("@UserId", userId, SqlDbType.Int));
-                using (var reader = command.ExecuteReader()) while (reader.Read()) items.Add(new PasswordHashResult
-                {
-                    Hash=(byte[])reader[0],Salt=(byte[])reader[1],Iterations=Convert.ToInt32(reader[2]),Algorithm="PBKDF2-HMAC-SHA256"
-                });
-            }
-            return items;
-        }
-
         public void UpdateProfile(UserIdentity user)
         {
             const string sql = @"UPDATE sec.Users SET Email=@Email,Phone=@Phone,FirstName=@FirstName,LastName=@LastName,Position=@Position,ModifiedUtc=SYSUTCDATETIME() WHERE UserId=@UserId;";
@@ -96,22 +65,16 @@ namespace BC.FixedAsset.Data
             }
         }
 
-        public void ChangePassword(int userId, PasswordHashResult password, DateTime? expiresUtc, int historyCount)
+        public void ChangePassword(int userId, PasswordHashResult password)
         {
             using (var connection=Db.OpenConnection()) using (var transaction=connection.BeginTransaction())
             {
                 try
                 {
-                    const string historySql=@"INSERT sec.PasswordHistory(UserId,PasswordHash,PasswordSalt,PasswordIterations)
-                        SELECT UserId,PasswordHash,PasswordSalt,PasswordIterations FROM sec.UserCredentials WHERE UserId=@UserId AND PasswordHash IS NOT NULL;";
-                    using(var command=new SqlCommand(historySql,connection,transaction)){command.Parameters.Add(Db.Parameter("@UserId",userId,SqlDbType.Int));command.ExecuteNonQuery();}
                     const string updateSql=@"UPDATE sec.UserCredentials SET PasswordHash=@Hash,PasswordSalt=@Salt,PasswordIterations=@Iterations,PasswordAlgorithm=@Algorithm,
-                        PasswordChangedUtc=SYSUTCDATETIME(),PasswordExpiresUtc=@ExpiresUtc,FailedLoginCount=0,LockedUntilUtc=NULL WHERE UserId=@UserId;
+                        PasswordChangedUtc=SYSUTCDATETIME(),PasswordExpiresUtc=NULL,FailedLoginCount=0,LockedUntilUtc=NULL WHERE UserId=@UserId;
                         UPDATE sec.Users SET MustChangePassword=0,ModifiedUtc=SYSUTCDATETIME() WHERE UserId=@UserId;";
-                    using(var command=new SqlCommand(updateSql,connection,transaction)){command.Parameters.Add(Db.Parameter("@Hash",password.Hash,SqlDbType.VarBinary,64));command.Parameters.Add(Db.Parameter("@Salt",password.Salt,SqlDbType.VarBinary,64));command.Parameters.Add(Db.Parameter("@Iterations",password.Iterations,SqlDbType.Int));command.Parameters.Add(Db.Parameter("@Algorithm",password.Algorithm,SqlDbType.NVarChar,50));command.Parameters.Add(Db.Parameter("@ExpiresUtc",expiresUtc,SqlDbType.DateTime2));command.Parameters.Add(Db.Parameter("@UserId",userId,SqlDbType.Int));command.ExecuteNonQuery();}
-                    const string trimSql=@"DELETE FROM sec.PasswordHistory WHERE UserId=@UserId AND PasswordHistoryId NOT IN
-                        (SELECT TOP (@HistoryCount) PasswordHistoryId FROM sec.PasswordHistory WHERE UserId=@UserId ORDER BY PasswordHistoryId DESC);";
-                    using(var command=new SqlCommand(trimSql,connection,transaction)){command.Parameters.Add(Db.Parameter("@UserId",userId,SqlDbType.Int));command.Parameters.Add(Db.Parameter("@HistoryCount",Math.Max(0,historyCount),SqlDbType.Int));command.ExecuteNonQuery();}
+                    using(var command=new SqlCommand(updateSql,connection,transaction)){command.Parameters.Add(Db.Parameter("@Hash",password.Hash,SqlDbType.VarBinary,64));command.Parameters.Add(Db.Parameter("@Salt",password.Salt,SqlDbType.VarBinary,64));command.Parameters.Add(Db.Parameter("@Iterations",password.Iterations,SqlDbType.Int));command.Parameters.Add(Db.Parameter("@Algorithm",password.Algorithm,SqlDbType.NVarChar,50));command.Parameters.Add(Db.Parameter("@UserId",userId,SqlDbType.Int));command.ExecuteNonQuery();}
                     transaction.Commit();
                 }
                 catch { transaction.Rollback(); throw; }

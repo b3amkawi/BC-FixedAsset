@@ -103,12 +103,6 @@ BEGIN TRY
     IF NOT EXISTS(SELECT 1 FROM mst.Rooms WHERE FloorId=@WHAG AND RoomCode=N'LOAD')
         INSERT mst.Rooms(FloorId,RoomCode,RoomName) VALUES(@WHAG,N'LOAD',N'Loading Bay');
 
-    IF NOT EXISTS(SELECT 1 FROM sec.PasswordPolicies WHERE IsActive=1)
-        INSERT sec.PasswordPolicies
-        (PolicyName,MinimumLength,RequireUppercase,RequireLowercase,RequireNumber,
-         RequireSpecialCharacter,PasswordHistoryCount,MaximumFailedAttempts,LockoutMinutes,ExpiryDays)
-        VALUES(N'BC Standard',12,1,1,1,1,5,5,15,90);
-
     INSERT sec.Roles(RoleCode,RoleName,IsSystemRole)
     SELECT v.Code,v.Name,1 FROM(VALUES
         (N'SYSTEM_ADMIN',N'System Administrator'),(N'SURVEYOR',N'Asset Surveyor'),

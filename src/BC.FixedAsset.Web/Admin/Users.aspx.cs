@@ -12,7 +12,7 @@ namespace BC.FixedAsset.Web.Admin
         protected Label lblMessage;
         protected HiddenField hidUserId;
         protected TextBox txtUserName, txtEmail, txtPhone, txtPosition, txtFirstName, txtLastName, txtInitialPassword;
-        protected DropDownList ddlDepartment, ddlExpiry, ddlFixedAssetRole, ddlAdministrationRole;
+        protected DropDownList ddlDepartment, ddlFixedAssetRole, ddlAdministrationRole;
         protected CheckBox chkIsActive;
         protected Literal litEditorTitle;
         protected Button btnNew, btnSave, btnCancel;
@@ -64,7 +64,7 @@ namespace BC.FixedAsset.Web.Admin
             hidUserId.Value = model.User.UserId.ToString(); txtUserName.Text = model.User.UserName; txtEmail.Text = model.User.Email; txtPhone.Text = model.User.Phone;
             txtPosition.Text = model.User.Position; txtFirstName.Text = model.User.FirstName; txtLastName.Text = model.User.LastName; chkIsActive.Checked = model.User.IsActive;
             Select(ddlDepartment, model.User.DepartmentId); Select(ddlFixedAssetRole, model.FixedAssetRoleId); Select(ddlAdministrationRole, model.AdministrationRoleId);
-            ddlExpiry.SelectedValue = ExpiryValue(model.PasswordExpiresUtc); txtInitialPassword.Text = string.Empty;
+            txtInitialPassword.Text = string.Empty;
             pnlEditor.Visible = true; litEditorTitle.Text = "แก้ไข User / Edit User"; btnSave.Text = "บันทึกการแก้ไข";
         }
 
@@ -78,15 +78,14 @@ namespace BC.FixedAsset.Web.Admin
                     UserId = userId, UserName = txtUserName.Text.Trim(), Email = txtEmail.Text.Trim(), Phone = txtPhone.Text.Trim(), Position = txtPosition.Text.Trim(),
                     FirstName = txtFirstName.Text.Trim(), LastName = txtLastName.Text.Trim(), DepartmentId = SelectedInt(ddlDepartment), IsActive = chkIsActive.Checked
                 };
-                var expiryDays = Convert.ToInt32(ddlExpiry.SelectedValue);
                 if (userId == 0)
                 {
-                    service.CreateLocalUser(user, txtInitialPassword.Text, expiryDays, SelectedInt(ddlFixedAssetRole), SelectedInt(ddlAdministrationRole));
-                    Show("สร้าง User และกำหนดสิทธิ์เรียบร้อย ระบบจะบังคับเปลี่ยนรหัสผ่านเมื่อ Login ครั้งแรก / User created.", false);
+                    service.CreateLocalUser(user, txtInitialPassword.Text, SelectedInt(ddlFixedAssetRole), SelectedInt(ddlAdministrationRole));
+                    Show("สร้าง User และกำหนดสิทธิ์เรียบร้อย / User created.", false);
                 }
                 else
                 {
-                    service.UpdateLocalUser(new UserAdministrationModel { User = user, FixedAssetRoleId = SelectedInt(ddlFixedAssetRole), AdministrationRoleId = SelectedInt(ddlAdministrationRole) }, txtInitialPassword.Text, expiryDays, CurrentUser.Id);
+                    service.UpdateLocalUser(new UserAdministrationModel { User = user, FixedAssetRoleId = SelectedInt(ddlFixedAssetRole), AdministrationRoleId = SelectedInt(ddlAdministrationRole) }, txtInitialPassword.Text, CurrentUser.Id);
                     Show("บันทึกข้อมูลผู้ใช้และสิทธิ์เรียบร้อย / User updated.", false);
                 }
                 pnlEditor.Visible = false; BindGrid();
@@ -99,12 +98,11 @@ namespace BC.FixedAsset.Web.Admin
         private void ClearEditor()
         {
             hidUserId.Value = string.Empty; txtUserName.Text = txtEmail.Text = txtPhone.Text = txtPosition.Text = txtFirstName.Text = txtLastName.Text = txtInitialPassword.Text = string.Empty;
-            if (ddlDepartment.Items.Count > 0) ddlDepartment.SelectedIndex = 0; ddlExpiry.SelectedValue = "90"; ddlFixedAssetRole.SelectedIndex = 0; ddlAdministrationRole.SelectedIndex = 0; chkIsActive.Checked = true;
+            if (ddlDepartment.Items.Count > 0) ddlDepartment.SelectedIndex = 0; ddlFixedAssetRole.SelectedIndex = 0; ddlAdministrationRole.SelectedIndex = 0; chkIsActive.Checked = true;
         }
 
         private static int? SelectedInt(ListControl list) => string.IsNullOrWhiteSpace(list.SelectedValue) ? (int?)null : Convert.ToInt32(list.SelectedValue);
         private static void Select(ListControl list, int? value) { list.ClearSelection(); var item = list.Items.FindByValue(value.HasValue ? value.Value.ToString() : string.Empty); if (item != null) item.Selected = true; }
-        private static string ExpiryValue(DateTime? expiry) { if (!expiry.HasValue) return "0"; var days = (expiry.Value - DateTime.UtcNow).TotalDays; return days <= 30 ? "30" : days <= 60 ? "60" : "90"; }
         private void Show(string message, bool error) { lblMessage.CssClass = error ? "message error" : "message"; lblMessage.Text = message; }
     }
 }

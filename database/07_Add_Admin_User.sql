@@ -66,7 +66,7 @@ BEGIN TRY
         (
             @UserName,@Email,@FirstName,@LastName,@Position,
             (SELECT TOP(1) DepartmentId FROM mst.Departments WHERE DepartmentCode=N'IT'),
-            N'~/Assets/default-profile.svg',0,1,1
+            N'~/Assets/default-profile.svg',0,0,1
         );
 
         SET @UserId=CONVERT(int,SCOPE_IDENTITY());
@@ -74,7 +74,7 @@ BEGIN TRY
     ELSE
     BEGIN
         UPDATE sec.Users
-        SET IsActive=1,AccountType=0,ModifiedUtc=SYSUTCDATETIME()
+        SET IsActive=1,AccountType=0,MustChangePassword=0,ModifiedUtc=SYSUTCDATETIME()
         WHERE UserId=@UserId;
     END;
 
@@ -92,10 +92,10 @@ BEGIN TRY
             0x302F84772BC4F9860671C029B8AB6D541F12E7D11E13E63F3B38349F23D07495,
             0x95E2C631A525C6E4EA495D432CC08CC3756E4FADE77A28C35E173DCBE1E545A8,
             120000,N'PBKDF2-HMAC-SHA256',SYSUTCDATETIME(),
-            DATEADD(DAY,90,SYSUTCDATETIME()),0
+            NULL,0
         );
 
-        UPDATE sec.Users SET MustChangePassword=1 WHERE UserId=@UserId;
+        UPDATE sec.Users SET MustChangePassword=0 WHERE UserId=@UserId;
     END;
 
     INSERT sec.UserApplicationRoles(UserId,ApplicationId,RoleId,IsActive)

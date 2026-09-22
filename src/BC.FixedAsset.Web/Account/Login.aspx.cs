@@ -24,7 +24,6 @@ namespace BC.FixedAsset.Web.Account
             var result = new AuthenticationService().AuthenticateLocal(txtUserName.Text, txtPassword.Text);
             if (!result.Succeeded) { pnlError.Visible = true; litError.Text = Server.HtmlEncode(result.ErrorMessage); return; }
             CurrentUser.Set(result.User); FormsAuthentication.SetAuthCookie(result.User.UserName, false);
-            if (result.User.MustChangePassword) { Response.Redirect("~/Account/Profile.aspx?changePassword=1"); return; }
             var returnUrl = Request.QueryString["returnUrl"];
             Response.Redirect(IsLocalUrl(returnUrl) ? returnUrl : "~/Portal/Default.aspx");
         }

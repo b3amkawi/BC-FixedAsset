@@ -9,14 +9,12 @@ namespace BC.FixedAsset.Web.Account
         protected TextBox txtUserName, txtEmail, txtPhone, txtFirstName, txtLastName, txtPosition, txtDivision, txtDepartment;
         protected TextBox txtCurrentPassword, txtNewPassword, txtConfirmPassword;
         protected Label lblMessage;
-        protected Panel pnlPasswordRequired;
         protected Literal litInitials;
         protected Button btnSave, btnChangePassword;
         private readonly UserProfileService service = new UserProfileService();
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            pnlPasswordRequired.Visible = CurrentUser.Get().MustChangePassword;
             if (IsPostBack) return;
             var user = CurrentUser.Get();
             var first = string.IsNullOrWhiteSpace(user.FirstName) ? "B" : user.FirstName.Substring(0,1);
@@ -45,7 +43,7 @@ namespace BC.FixedAsset.Web.Account
             {
                 var user=CurrentUser.Get();
                 service.ChangePassword(user,txtCurrentPassword.Text,txtNewPassword.Text,txtConfirmPassword.Text);
-                CurrentUser.Set(user);pnlPasswordRequired.Visible=false;Show("เปลี่ยนรหัสผ่านเรียบร้อย / Password changed.");
+                CurrentUser.Set(user);Show("เปลี่ยนรหัสผ่านเรียบร้อย / Password changed.");
                 txtCurrentPassword.Text=txtNewPassword.Text=txtConfirmPassword.Text=string.Empty;
             }
             catch(Exception ex){Show(Server.HtmlEncode(ex.Message));}

@@ -35,8 +35,6 @@ namespace BC.FixedAsset.Web
             if (!Context.User.Identity.IsAuthenticated || CurrentUser.Get() == null)
                 Response.Redirect("~/Account/Login.aspx?returnUrl=" + Server.UrlEncode(Request.RawUrl), true);
             var path = Request.AppRelativeCurrentExecutionFilePath.ToLowerInvariant();
-            if (CurrentUser.Get().MustChangePassword && path != "~/account/profile.aspx")
-                Response.Redirect("~/Account/Profile.aspx?changePassword=1", true);
             var applicationCode = path == "~/fixedasset/numbering.aspx" ? "ADMIN" : path.StartsWith("~/admin/") ? "ADMIN" : path.StartsWith("~/fixedasset/") ? "FIXED_ASSET" : null;
             if (applicationCode != null && !new ApplicationRepository().HasAccess(CurrentUser.Id, applicationCode))
                 Response.Redirect("~/Portal/Default.aspx?denied=1", true);
