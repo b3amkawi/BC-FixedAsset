@@ -11,6 +11,15 @@
     row.addEventListener('click',function(e){if(e.target.closest('a,button,input,select,textarea,label'))return;openDetail()});
     row.addEventListener('keydown',function(e){if(e.target!==row)return;if(e.key==='Enter'||e.key===' '){e.preventDefault();openDetail()}});
   });
+  var imageViewer;
+  function closeImageViewer(){if(imageViewer){imageViewer.hidden=true;imageViewer.querySelector('img').removeAttribute('src')}}
+  function openImageViewer(source,caption){
+    if(!imageViewer){imageViewer=document.createElement('div');imageViewer.className='image-viewer';imageViewer.hidden=true;imageViewer.innerHTML='<button type="button" class="image-viewer-close" aria-label="ปิดรูปภาพ">×</button><figure><img alt=""/><figcaption></figcaption></figure>';document.body.appendChild(imageViewer);imageViewer.addEventListener('click',function(e){if(e.target===imageViewer||e.target.closest('.image-viewer-close'))closeImageViewer()});}
+    imageViewer.querySelector('img').src=source;imageViewer.querySelector('img').alt=caption||'รูปทรัพย์สิน';imageViewer.querySelector('figcaption').textContent=caption||'';imageViewer.hidden=false;imageViewer.querySelector('.image-viewer-close').focus();
+  }
+  document.querySelectorAll('.detail-images img').forEach(function(img){img.tabIndex=0;img.setAttribute('role','button');img.setAttribute('aria-label','เปิดดูรูปขนาดใหญ่ '+(img.alt||''));});
+  document.addEventListener('click',function(e){var img=e.target.closest('.detail-images img');if(img)openImageViewer(img.currentSrc||img.src,img.alt||((img.closest('figure')&&img.closest('figure').querySelector('figcaption'))?img.closest('figure').querySelector('figcaption').textContent:''));});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeImageViewer();var img=e.target.closest&&e.target.closest('.detail-images img');if(img&&(e.key==='Enter'||e.key===' ')){e.preventDefault();openImageViewer(img.currentSrc||img.src,img.alt||'');}});
   if(form&&loading)form.addEventListener('submit',function(e){var t=e.submitter;if(t&&(t.classList.contains('icon-button')||(t.id||'').indexOf('btnClose')>=0))return;loading.classList.add('show')});
   window.addEventListener('pageshow',function(){if(loading)loading.classList.remove('show')});
 })();

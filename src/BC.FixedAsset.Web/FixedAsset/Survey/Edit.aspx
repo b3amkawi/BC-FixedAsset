@@ -30,7 +30,7 @@
         <div class="field"><label>ผู้ดูแลทรัพย์สิน / Custodian</label><asp:TextBox ID="txtCustodian" runat="server" MaxLength="250" placeholder="พิมพ์ชื่อผู้ดูแลทรัพย์สิน"/><small>กรอกชื่อได้อย่างอิสระ ไม่จำเป็นต้องเป็นผู้ใช้ในระบบ</small></div>
         <div class="field"><label>อาคาร / Building *</label><asp:DropDownList ID="ddlBuilding" runat="server"/></div>
         <div class="field"><label>ชั้น / Floor *</label><asp:DropDownList ID="ddlFloor" runat="server"/></div>
-        <div class="field"><label>ห้อง / Room *</label><asp:DropDownList ID="ddlRoom" runat="server"/></div>
+        <div class="field"><label>ห้อง / Room *</label><asp:DropDownList ID="ddlRoom" runat="server"/><small>เลือกห้องได้อิสระ ไม่จำกัดตามอาคารหรือชั้น</small></div>
       </div>
     </section>
     <section class="form-section card">
@@ -67,10 +67,10 @@
 (function(){
   var placeholder='<%= ResolveUrl("~/Assets/asset-placeholder.svg") %>';
   document.querySelectorAll('.image-field input[type=file]').forEach(function(input){var image=input.parentElement.querySelector('img');if(!image.getAttribute('src'))image.src=placeholder;input.addEventListener('change',function(){if(input.files&&input.files[0])image.src=URL.createObjectURL(input.files[0]);});});
-  var building=document.getElementById('<%= ddlBuilding.ClientID %>'),floor=document.getElementById('<%= ddlFloor.ClientID %>'),room=document.getElementById('<%= ddlRoom.ClientID %>');
+  var building=document.getElementById('<%= ddlBuilding.ClientID %>'),floor=document.getElementById('<%= ddlFloor.ClientID %>');
   function filter(list,parent){var first=null,selected=null;Array.prototype.forEach.call(list.options,function(option){var matches=option.getAttribute('data-parent')===parent;option.hidden=!matches;option.disabled=!matches;if(matches){if(!first)first=option;if(option.selected)selected=option;}});if(!selected)list.value=first?first.value:'';list.disabled=!first;}
-  function updateRooms(){filter(room,floor.value);}function updateFloors(){filter(floor,building.value);updateRooms();}
-  building.addEventListener('change',updateFloors);floor.addEventListener('change',updateRooms);updateFloors();
+  function updateFloors(){filter(floor,building.value);}
+  building.addEventListener('change',updateFloors);updateFloors();
 })();
 </script>
 </asp:Content>
