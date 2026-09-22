@@ -12,7 +12,13 @@ namespace BC.FixedAsset.Web.Account
         protected global::System.Web.UI.WebControls.TextBox txtPassword;
         protected global::System.Web.UI.WebControls.Button btnLogin;
 
-        protected void Page_Load(object sender, EventArgs e) { if (!IsPostBack && User.Identity.IsAuthenticated) Response.Redirect("~/Portal/Default.aspx"); }
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            if (CurrentUser.Get() == null && User.Identity.IsAuthenticated)
+                FormsAuthentication.SignOut();
+            if (!IsPostBack && User.Identity.IsAuthenticated && CurrentUser.Get() != null)
+                Response.Redirect("~/Portal/Default.aspx");
+        }
         protected void Login_Click(object sender, EventArgs e)
         {
             var result = new AuthenticationService().AuthenticateLocal(txtUserName.Text, txtPassword.Text);
