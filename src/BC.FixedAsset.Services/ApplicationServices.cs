@@ -96,6 +96,27 @@ namespace BC.FixedAsset.Services
         public DashboardSummary GetDashboard() => _fixedAssets.GetDashboard();
         public DataTable GetRegister(string query) => _fixedAssets.GetRegister(query);
         public DataTable GetRegisterDetail(long id) => _fixedAssets.GetRegisterDetail(id);
+        public RegisteredAssetEdit GetRegisterForEdit(long id, SurveyAccessContext access)
+        {
+            if (access == null || !access.IsSystemAdministrator || !new ApplicationRepository().HasRole(access.UserId, "ADMIN", "SYSTEM_ADMIN"))
+                throw new UnauthorizedAccessException("Only system administrators can edit registered assets.");
+            return _fixedAssets.GetRegisterForEdit(id);
+        }
+        public void UpdateRegister(RegisteredAssetEdit asset, SurveyAccessContext access)
+        {
+            if (access == null || !access.IsSystemAdministrator || !new ApplicationRepository().HasRole(access.UserId, "ADMIN", "SYSTEM_ADMIN"))
+                throw new UnauthorizedAccessException("Only system administrators can edit registered assets.");
+            if (asset == null || asset.FixedAssetId < 1 || asset.RowVersion == null || asset.RowVersion.Length != 8 ||
+                string.IsNullOrWhiteSpace(asset.AssetName) || asset.AssetName.Length > 250 || asset.Quantity <= 0 ||
+                asset.CategoryId < 1 || asset.DepartmentId < 1 || asset.UomId < 1 ||
+                string.IsNullOrWhiteSpace(asset.AssetStatus) || asset.AssetStatus.Length > 30)
+                throw new ArgumentException("Please enter valid asset name, category, department, quantity, unit and status.");
+            if (asset.Brand != null && asset.Brand.Length > 120 || asset.ModelDescription != null && asset.ModelDescription.Length > 300 ||
+                asset.SerialNumber != null && asset.SerialNumber.Length > 150 || asset.CustodianName != null && asset.CustodianName.Length > 250 ||
+                asset.PurchaseOrderNo != null && asset.PurchaseOrderNo.Length > 100 || asset.AcquisitionCost < 0)
+                throw new ArgumentException("One or more asset fields are too long or invalid.");
+            _fixedAssets.UpdateRegister(asset, access.UserId);
+        }
     }
 
     public sealed class AssetNumberService

@@ -91,6 +91,28 @@ namespace BC.FixedAsset.Core.Models
         public byte[] RowVersion { get; set; }
     }
 
+    public sealed class RegisteredAssetEdit
+    {
+        public long FixedAssetId { get; set; }
+        public string AssetName { get; set; }
+        public int CategoryId { get; set; }
+        public string Brand { get; set; }
+        public string ModelDescription { get; set; }
+        public string SerialNumber { get; set; }
+        public int DepartmentId { get; set; }
+        public string CustodianName { get; set; }
+        public int? BuildingId { get; set; }
+        public int? FloorId { get; set; }
+        public int? RoomId { get; set; }
+        public decimal Quantity { get; set; }
+        public int UomId { get; set; }
+        public DateTime? ReceivedDate { get; set; }
+        public string PurchaseOrderNo { get; set; }
+        public decimal? AcquisitionCost { get; set; }
+        public string AssetStatus { get; set; }
+        public byte[] RowVersion { get; set; }
+    }
+
     public sealed class SurveyAttachment
     {
         public long AttachmentId { get; set; }
