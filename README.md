@@ -41,7 +41,7 @@ Not included in this phase: Transfer & Movement, Maintenance, Disposal and Physi
 
 ## Create the database
 
-In SQL Server Management Studio, enable **Query > SQLCMD Mode**, open the `database` folder and run:
+For a new database, enable **Query > SQLCMD Mode** in SQL Server Management Studio, open the `database` folder and run:
 
 1. `database/00_Install_All.sql`
 
@@ -51,6 +51,9 @@ Or run the component scripts in order:
 2. `database/02_Schema.sql`
 3. `database/03_Seed_Data.sql`
 4. `database/05_Upgrade_v3.sql`
+5. `database/06_Upgrade_v4.sql`
+
+For an existing database that only needs the reference data, run `database/08_Default_Data_Setup.sql` directly in SSMS. It can be run repeatedly without duplicating rows or resetting the administrator password. To add or restore the system administrator separately, run `database/07_Add_Admin_User.sql`. Do not re-run `03_Seed_Data.sql` against an existing database unless you intend to reset the `admin` credential.
 
 The seed creates a first-use administrator:
 
