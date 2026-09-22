@@ -1,6 +1,7 @@
 using BC.FixedAsset.Services;
 using System;
 using System.Data;
+using System.IO;
 using System.Text;
 using System.Web.UI;
 using System.Web.UI.WebControls;
@@ -12,7 +13,9 @@ namespace BC.FixedAsset.Web.FixedAsset.Survey
         protected TextBox txtSearch;
         protected DropDownList ddlStatus;
         protected GridView gridSurvey;
-        protected Button btnSearch, btnExport, btnClose;
+        protected Button btnSearch, btnExport, btnClose, btnImport;
+        protected LinkButton btnTemplate;
+        protected FileUpload fileImport;
         protected Label lblMessage;
         protected Panel pnlDetail;
         protected Literal litDetail;
@@ -83,6 +86,32 @@ namespace BC.FixedAsset.Web.FixedAsset.Survey
         private static string Money(object value) => value == DBNull.Value ? "" : "฿" + Convert.ToDecimal(value).ToString("N2");
 
         protected void Close_Click(object sender, EventArgs e) { pnlDetail.Visible = false; }
+        protected void Import_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!fileImport.HasFile || !string.Equals(Path.GetExtension(fileImport.FileName), ".xlsx", StringComparison.OrdinalIgnoreCase))
+                    throw new ArgumentException("กรุณาเลือกไฟล์ .xlsx จากเทมเพลต");
+                if (fileImport.PostedFile.ContentLength > 2 * 1024 * 1024)
+                    throw new ArgumentException("ไฟล์ Excel ต้องไม่เกิน 2 MB");
+                var count = new SurveyExcelImportService().Import(fileImport.PostedFile.InputStream, AssetAccess);
+                Bind();
+                lblMessage.Text = "นำเข้า " + count + " รายการเป็น Draft เรียบร้อย";
+            }
+            catch (Exception ex) { lblMessage.Text = Server.HtmlEncode(ex.Message); }
+        }
+        protected void Template_Click(object sender, EventArgs e)
+        {
+            using (var stream = typeof(SurveyExcelImportService).Assembly.GetManifestResourceStream("BC.FixedAsset.Services.Templates.AssetSurveyImportTemplate.xlsx"))
+            {
+                if (stream == null) throw new InvalidOperationException("ไม่พบไฟล์เทมเพลต Excel");
+                Response.Clear();
+                Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                Response.AddHeader("Content-Disposition", "attachment;filename=AssetSurveyImportTemplate.xlsx");
+                stream.CopyTo(Response.OutputStream);
+                Response.End();
+            }
+        }
         protected void Export_Click(object sender, EventArgs e)
         {
             var table = Data(); Response.Clear(); Response.ContentType = "application/vnd.ms-excel";
