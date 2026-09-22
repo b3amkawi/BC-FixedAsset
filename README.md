@@ -71,6 +71,8 @@ No decryptable password or decryption key is stored. Local passwords use PBKDF2-
 
 ## Configuration
 
+The Admin-only **Master Data** page manages companies, divisions, departments, asset categories, units of measure, asset conditions, buildings, floors, and rooms. It supports adding, editing, and deleting unused records; referenced records must be marked inactive instead. Application settings, users and roles, and asset number schemes remain on their separate administration pages.
+
 Update `src/BC.FixedAsset.Web/Web.config`:
 
 - `BCFixedAsset`: SQL Server Express connection string

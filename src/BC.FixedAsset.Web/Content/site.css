@@ -154,6 +154,7 @@ input[readonly]{background:#f4f6f8;color:#607085}
 .admin-tabs{display:flex;gap:4px;width:max-content;max-width:100%;overflow:auto;background:#eef3f8;border-radius:10px;padding:4px;margin-bottom:18px}.admin-tabs a{padding:8px 14px;border-radius:7px;text-decoration:none;color:#52667d;font-size:.82rem;font-weight:700;white-space:nowrap}.admin-tabs a:hover,.admin-tabs a.active{background:#fff;color:#0e4384;box-shadow:0 1px 3px #0c315b18}
 .password-notice{display:flex;gap:12px;padding:12px 15px;margin-bottom:18px;border:1px solid #efcf67;border-radius:12px;background:#fff9dd;color:#745900}
 .master-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}
+.master-type-select{width:min(340px,100%)}.master-editor-fields{display:grid;gap:14px;margin:18px 0}.master-editor-fields .field label{font-size:.82rem}
 .master-row{display:grid;grid-template-columns:80px 1fr;gap:10px;padding:8px 0;border-bottom:1px solid #edf1f5;font-size:.84rem}
 .bar-list>div{display:grid;grid-template-columns:80px 1fr 30px;align-items:center;gap:12px;margin:13px 0}
 .bar-list i{display:block;height:10px;border-radius:99px;background:linear-gradient(90deg,#0e4384,#2172b8)}
