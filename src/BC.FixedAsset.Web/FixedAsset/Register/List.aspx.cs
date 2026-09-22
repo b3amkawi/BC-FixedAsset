@@ -13,6 +13,7 @@ namespace BC.FixedAsset.Web.FixedAsset.Register
         protected Label lblMessage;
         protected Panel pnlDetail;
         protected Literal litDetail;
+        protected Repeater repImages;
         private readonly AssetSurveyService service = new AssetSurveyService();
 
         protected void Page_Load(object sender, EventArgs e) { if (!IsPostBack) Bind(); }
@@ -39,6 +40,9 @@ namespace BC.FixedAsset.Web.FixedAsset.Register
                 var details = service.GetRegisterDetail(Convert.ToInt64(e.CommandArgument));
                 if (details.Rows.Count == 0) throw new InvalidOperationException("ไม่พบข้อมูลทรัพย์สิน");
                 var r = details.Rows[0];
+                var sourceId = r["SourceSurveyId"] == DBNull.Value ? 0 : Convert.ToInt64(r["SourceSurveyId"]);
+                repImages.DataSource = sourceId > 0 ? service.Attachments(sourceId, AssetAccess) : null;
+                repImages.DataBind();
                 litDetail.Text = "<dl class='detail-grid'>" +
                     Field("Fixed Asset ID", r["FixedAssetNo"]) + Field("ทรัพย์สิน", r["AssetName"]) +
                     Field("Category", r["CategoryName"]) + Field("Serial", r["SerialNumber"]) +
@@ -54,6 +58,7 @@ namespace BC.FixedAsset.Web.FixedAsset.Register
         }
 
         protected void Close_Click(object sender, EventArgs e) { pnlDetail.Visible = false; }
+        protected string AttachmentUrl(object id) => ResolveUrl("~/Attachment.ashx?id=" + id);
         private string Field(string label, object value) => "<dt>" + Server.HtmlEncode(label) + "</dt><dd>" + Server.HtmlEncode(Convert.ToString(value)) + "</dd>";
     }
 }

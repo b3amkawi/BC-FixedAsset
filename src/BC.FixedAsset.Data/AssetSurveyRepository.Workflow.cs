@@ -29,14 +29,14 @@ namespace BC.FixedAsset.Data
         public IList<SurveyAttachment> Attachments(long id, SurveyAccessContext access)
         {
             const string sql=@"SELECT a.* FROM fa.AssetSurveyAttachments a JOIN fa.AssetSurveys s ON s.SurveyId=a.SurveyId WHERE a.SurveyId=@Id AND
-              (@Admin=1 OR s.SurveyorUserId=@UserId OR (@Role IN('ASSET_MANAGER','DEPT_MANAGER') AND s.Status='ManagerReview') OR (@Role='FINANCE' AND s.Status='FinanceReview'));";
+              (@Admin=1 OR s.SurveyorUserId=@UserId OR (@Role IN('ASSET_MANAGER','DEPT_MANAGER') AND s.Status='ManagerReview') OR (@Role='FINANCE' AND s.Status='FinanceReview') OR (s.Status='Registered' AND @Role<>''));";
             var result=new List<SurveyAttachment>();using(var c=Db.OpenConnection())using(var cmd=new SqlCommand(sql,c)){Access(cmd,id,access);using(var r=cmd.ExecuteReader())while(r.Read())result.Add(MapAttachment(r));}return result;
         }
 
         public SurveyAttachment Attachment(long attachmentId, SurveyAccessContext access)
         {
             const string sql=@"SELECT a.* FROM fa.AssetSurveyAttachments a JOIN fa.AssetSurveys s ON s.SurveyId=a.SurveyId WHERE a.AttachmentId=@AttachmentId AND
-              (@Admin=1 OR s.SurveyorUserId=@UserId OR (@Role IN('ASSET_MANAGER','DEPT_MANAGER') AND s.Status='ManagerReview') OR (@Role='FINANCE' AND s.Status='FinanceReview'));";
+              (@Admin=1 OR s.SurveyorUserId=@UserId OR (@Role IN('ASSET_MANAGER','DEPT_MANAGER') AND s.Status='ManagerReview') OR (@Role='FINANCE' AND s.Status='FinanceReview') OR (s.Status='Registered' AND @Role<>''));";
             using(var c=Db.OpenConnection())using(var cmd=new SqlCommand(sql,c)){cmd.Parameters.Add(Db.Parameter("@AttachmentId",attachmentId,SqlDbType.BigInt));AccessOnly(cmd,access);using(var r=cmd.ExecuteReader())return r.Read()?MapAttachment(r):null;}
         }
 
