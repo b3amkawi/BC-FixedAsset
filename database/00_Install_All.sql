@@ -12,6 +12,7 @@
 :r .\02_Schema.sql
 :r .\03_Seed_Data.sql
 :r .\05_Upgrade_v3.sql
+:r .\06_Upgrade_v4.sql
 
 PRINT N'BCFixedAsset installation completed.';
 GO

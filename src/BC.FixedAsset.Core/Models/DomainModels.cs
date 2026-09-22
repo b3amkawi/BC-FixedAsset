@@ -58,6 +58,7 @@ namespace BC.FixedAsset.Core.Models
         public int SurveyorUserId { get; set; }
         public int DepartmentId { get; set; }
         public int CustodianUserId { get; set; }
+        public string CustodianName { get; set; }
         public string AssetName { get; set; }
         public int CategoryId { get; set; }
         public string Brand { get; set; }
@@ -100,6 +101,7 @@ namespace BC.FixedAsset.Core.Models
         public string RelativePath { get; set; }
         public string ContentType { get; set; }
         public long FileSizeBytes { get; set; }
+        public byte[] FileContent { get; set; }
         public int UploadedByUserId { get; set; }
         public DateTime UploadedUtc { get; set; }
     }

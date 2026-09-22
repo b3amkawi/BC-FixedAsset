@@ -209,13 +209,13 @@ namespace BC.FixedAsset.Data
         {
             const string sql = @"SELECT TOP (1000) s.SurveyId,s.SurveyNo,s.FixedAssetNo,s.SurveyDate,s.AssetName,s.Brand,s.ModelDescription,s.SerialNumber,
                 s.WidthCm,s.LengthCm,s.HeightCm,s.WeightKg,s.Quantity,m.UomCode,s.PurchaseOrderNo,s.ReceivedDate,s.Status,s.EstimatedValue,
-                d.DepartmentName,u.DisplayName AS Custodian,creator.DisplayName AS CreatedByName,b.BuildingName,fl.FloorName,rm.RoomName,s.ReturnReason,
+                d.DepartmentName,COALESCE(NULLIF(s.CustodianName,''),u.DisplayName) AS Custodian,creator.DisplayName AS CreatedByName,b.BuildingName,fl.FloorName,rm.RoomName,s.ReturnReason,
                 (SELECT TOP(1) AttachmentId FROM fa.AssetSurveyAttachments a WHERE a.SurveyId=s.SurveyId AND a.AttachmentType='ACTUAL') ActualAttachmentId
                 FROM fa.AssetSurveys s INNER JOIN mst.Departments d ON d.DepartmentId=s.DepartmentId
                 LEFT JOIN sec.Users u ON u.UserId=s.CustodianUserId LEFT JOIN sec.Users creator ON creator.UserId=s.SurveyorUserId
                 LEFT JOIN mst.Uoms m ON m.UomId=s.UomId LEFT JOIN mst.Buildings b ON b.BuildingId=s.BuildingId
                 LEFT JOIN mst.Floors fl ON fl.FloorId=s.FloorId LEFT JOIN mst.Rooms rm ON rm.RoomId=s.RoomId
-                WHERE (@Query='' OR s.SurveyNo LIKE '%'+@Query+'%' OR ISNULL(s.FixedAssetNo,'') LIKE '%'+@Query+'%' OR s.AssetName LIKE '%'+@Query+'%' OR ISNULL(s.SerialNumber,'') LIKE '%'+@Query+'%')
+                WHERE (@Query='' OR s.SurveyNo LIKE '%'+@Query+'%' OR ISNULL(s.FixedAssetNo,'') LIKE '%'+@Query+'%' OR s.AssetName LIKE '%'+@Query+'%' OR ISNULL(s.SerialNumber,'') LIKE '%'+@Query+'%' OR ISNULL(s.CustodianName,'') LIKE '%'+@Query+'%')
                   AND (@Status='' OR s.Status=@Status)
                   AND (@IsAdmin=1 OR s.SurveyorUserId=@UserId
                     OR (@QueueStatus='ManagerReview' AND @RoleCode IN('ASSET_MANAGER','DEPT_MANAGER') AND s.Status='ManagerReview')

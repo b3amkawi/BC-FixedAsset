@@ -111,9 +111,8 @@ namespace BC.FixedAsset.Services
             if(file.ContentLength>5*1024*1024)throw new ArgumentException("Each image must not exceed 5 MB.");
             var extension=Path.GetExtension(file.FileName).ToLowerInvariant();
             if(extension!=".jpg"&&extension!=".jpeg"&&extension!=".png"&&extension!=".webp")throw new ArgumentException("Only JPG, PNG and WEBP images are allowed.");
-            var folder=Path.Combine(uploadRoot,"surveys",surveyId.ToString());Directory.CreateDirectory(folder);
-            var stored=type.ToLowerInvariant()+"-"+Guid.NewGuid().ToString("N")+extension;var full=Path.Combine(folder,stored);file.SaveAs(full);
-            var relative="surveys/"+surveyId+"/"+stored;var old=_surveys.SaveAttachment(surveyId,type,Path.GetFileName(file.FileName),stored,relative,file.ContentType,file.ContentLength,access);
+            byte[] content;using(var memory=new MemoryStream()){file.InputStream.CopyTo(memory);content=memory.ToArray();}
+            var old=_surveys.SaveAttachment(surveyId,type,Path.GetFileName(file.FileName),file.ContentType,file.ContentLength,content,access);
             if(!string.IsNullOrEmpty(old)){var oldFull=Path.GetFullPath(Path.Combine(uploadRoot,old.Replace('/',Path.DirectorySeparatorChar)));if(oldFull.StartsWith(Path.GetFullPath(uploadRoot),StringComparison.OrdinalIgnoreCase)&&File.Exists(oldFull))File.Delete(oldFull);}
         }
         public DataTable GetReference(string type) => _fixedAssets.GetReference(type);
