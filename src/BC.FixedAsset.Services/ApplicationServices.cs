@@ -119,6 +119,7 @@ namespace BC.FixedAsset.Services
         public DataTable GetReference(string type) => _fixedAssets.GetReference(type);
         public DashboardSummary GetDashboard() => _fixedAssets.GetDashboard();
         public DataTable GetRegister(string query) => _fixedAssets.GetRegister(query);
+        public DataTable GetRegisterDetail(long id) => _fixedAssets.GetRegisterDetail(id);
     }
 
     public sealed class AssetNumberService
