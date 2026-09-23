@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BC.FixedAsset.Core.Models
 {
-    public enum SurveyStatus { Draft, Submitted, ManagerReview, FinanceReview, Returned, Approved, Registered, Cancelled }
+    public enum SurveyStatus { Draft, Submitted, ManagerReview, FinanceReview, Returned, Rejected, Approved, Registered, Cancelled }
     public enum AccountType { Local, EntraIdSso }
 
     public sealed class UserIdentity

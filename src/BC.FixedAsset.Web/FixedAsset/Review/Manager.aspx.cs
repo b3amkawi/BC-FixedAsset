@@ -10,8 +10,9 @@ namespace BC.FixedAsset.Web.FixedAsset.Review
     {
         protected GridView gridReview;
         protected TextBox txtReason;
-        protected HiddenField hidReturnId, hidApproveId;
-        protected Button btnReturn, btnApprove, btnCloseDetail, btnApproveFromDetail;
+        protected DropDownList ddlApproveRemark, ddlRejectRemark;
+        protected HiddenField hidReturnId, hidApproveId, hidRejectId;
+        protected Button btnReturn, btnApprove, btnReject, btnCloseDetail;
         protected Label lblMessage;
         protected Panel pnlDetail;
         protected Literal litDetail;
@@ -54,7 +55,6 @@ namespace BC.FixedAsset.Web.FixedAsset.Review
         }
 
         protected void CloseDetail_Click(object sender, EventArgs e) { pnlDetail.Visible = false; }
-        protected void ApproveFromDetail_Click(object sender, EventArgs e) { ApproveCurrent(); }
         protected void Approve_Click(object sender, EventArgs e) { ApproveCurrent(); }
 
         private void ApproveCurrent()
@@ -62,14 +62,35 @@ namespace BC.FixedAsset.Web.FixedAsset.Review
             try
             {
                 long id;
+                var remark = DecisionRemark(ddlApproveRemark.SelectedValue);
                 if (!long.TryParse(hidApproveId.Value, out id)) throw new ArgumentException("ไม่พบรายการสำหรับอนุมัติ");
-                service.Approve(id, AssetAccess);
-                hidApproveId.Value = "";
+                service.Approve(id, AssetAccess, remark);
+                hidApproveId.Value = ""; ddlApproveRemark.SelectedIndex = 0;
                 pnlDetail.Visible = false;
                 Bind();
                 lblMessage.Text = "อนุมัติเรียบร้อย";
             }
-            catch (Exception ex) { lblMessage.Text = Server.HtmlEncode(ex.Message); }
+            catch (Exception ex) { lblMessage.Text = Server.HtmlEncode(ex.Message); ClientScript.RegisterStartupScript(GetType(), "approveDialog", "document.getElementById('approveDialog').hidden=false;", true); }
+        }
+
+        protected void Reject_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                long id;
+                var remark = DecisionRemark(ddlRejectRemark.SelectedValue);
+                if (!long.TryParse(hidRejectId.Value, out id)) throw new ArgumentException("ไม่พบรายการสำหรับ Reject");
+                service.Reject(id, remark, AssetAccess);
+                hidRejectId.Value = ""; ddlRejectRemark.SelectedIndex = 0;
+                pnlDetail.Visible = false; Bind(); lblMessage.Text = "Reject เรียบร้อย";
+            }
+            catch (Exception ex) { lblMessage.Text = Server.HtmlEncode(ex.Message); ClientScript.RegisterStartupScript(GetType(), "rejectDialog", "document.getElementById('rejectDialog').hidden=false;", true); }
+        }
+
+        private static string DecisionRemark(string value)
+        {
+            if (value != "Spare part" && value != "Fixed Asset") throw new ArgumentException("กรุณาเลือก Remark");
+            return value;
         }
 
         protected void Return_Click(object sender, EventArgs e)

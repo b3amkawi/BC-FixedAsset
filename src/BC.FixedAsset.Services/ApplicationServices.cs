@@ -72,7 +72,8 @@ namespace BC.FixedAsset.Services
         public SurveyAttachment Attachment(long id, SurveyAccessContext access) => _surveys.Attachment(id, access);
         public long SaveDraft(AssetSurvey survey, SurveyAccessContext access) => _fixedAssets.SaveDraft(survey, access);
         public string Submit(long id, SurveyAccessContext access) => _surveys.Advance(id, access);
-        public string Approve(long id, SurveyAccessContext access) => _surveys.Advance(id, access);
+        public string Approve(long id, SurveyAccessContext access, string comment = null) => _surveys.Advance(id, access, comment);
+        public void Reject(long id, string comment, SurveyAccessContext access) => _surveys.Reject(id, comment, access);
         public void Return(long id, string reason, SurveyAccessContext access) => _surveys.Return(id, reason, access);
         public void Delete(long id, SurveyAccessContext access, string uploadRoot)
         {
