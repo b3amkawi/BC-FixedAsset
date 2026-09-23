@@ -22,7 +22,40 @@ namespace BC.FixedAsset.Web.FixedAsset.Survey
         protected void Page_Load(object sender, EventArgs e) { if (!IsPostBack) Bind(); }
         protected void Search_Click(object sender, EventArgs e) => Bind();
         private DataTable Data() => service.Search(txtSearch.Text, ddlStatus.SelectedValue, AssetAccess);
-        private void Bind() { gridSurvey.DataSource = Data(); gridSurvey.DataBind(); }
+        private string SortExpression { get => Convert.ToString(ViewState["SurveySortExpression"]); set => ViewState["SurveySortExpression"] = value; }
+        private string SortDirection { get => Convert.ToString(ViewState["SurveySortDirection"]); set => ViewState["SurveySortDirection"] = value; }
+
+        private void Bind()
+        {
+            var table = Data();
+            if (!string.IsNullOrEmpty(SortExpression)) table.DefaultView.Sort = SortClause(SortExpression, SortDirection);
+            gridSurvey.DataSource = table.DefaultView;
+            gridSurvey.DataBind();
+        }
+
+        protected void Grid_Sorting(object sender, GridViewSortEventArgs e)
+        {
+            SortDirection = SortExpression == e.SortExpression && SortDirection == "ASC" ? "DESC" : "ASC";
+            SortExpression = e.SortExpression;
+            Bind();
+        }
+
+        private static string SortClause(string expression, string direction)
+        {
+            var suffix = direction == "DESC" ? " DESC" : " ASC";
+            switch (expression)
+            {
+                case "SurveyNo": return "SurveyNo" + suffix;
+                case "AssetName": return "AssetName" + suffix + ", SerialNumber" + suffix;
+                case "Dimensions": return "WidthCm" + suffix + ", LengthCm" + suffix + ", HeightCm" + suffix;
+                case "WeightKg": return "WeightKg" + suffix;
+                case "Quantity": return "Quantity" + suffix + ", UomCode" + suffix;
+                case "Location": return "BuildingName" + suffix + ", FloorName" + suffix + ", RoomName" + suffix;
+                case "Custodian": return "Custodian" + suffix;
+                case "CreatedByName": return "CreatedByName" + suffix;
+                default: return "SurveyNo ASC";
+            }
+        }
 
         protected void Grid_RowDataBound(object sender, GridViewRowEventArgs e)
         {
@@ -38,6 +71,7 @@ namespace BC.FixedAsset.Web.FixedAsset.Survey
 
         protected void Grid_RowCommand(object sender, GridViewCommandEventArgs e)
         {
+            if (e.CommandName != "DeleteSurvey" && e.CommandName != "Detail") return;
             try
             {
                 var id = Convert.ToInt64(e.CommandArgument);
