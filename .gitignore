@@ -6,3 +6,5 @@ obj/
 *.cache
 App_Data/*.mdf
 App_Data/*.ldf
+outputs/
+src/BC.FixedAsset.Web/App_Data/
