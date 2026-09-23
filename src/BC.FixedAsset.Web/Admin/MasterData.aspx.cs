@@ -18,7 +18,7 @@ namespace BC.FixedAsset.Web.Admin
         protected CheckBox chkActive;
         protected HiddenField hidId, hidDeleteId;
         private readonly MasterDataRepository repository = new MasterDataRepository();
-        private static readonly string[] KindKeys = { "Company", "Division", "Department", "Category", "Uom", "Condition", "Building", "Floor", "Room" };
+        private static readonly string[] KindKeys = { "Company", "Division", "Department", "Category", "Uom", "Condition", "ReviewRemark", "Building", "Floor", "Room" };
 
         protected override void OnInit(EventArgs e)
         {

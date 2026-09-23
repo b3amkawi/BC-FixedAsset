@@ -19,7 +19,22 @@ namespace BC.FixedAsset.Web.FixedAsset.Review
         protected Repeater repImages;
         private readonly AssetSurveyService service = new AssetSurveyService();
 
-        protected void Page_Load(object sender, EventArgs e) { if (!IsPostBack) Bind(); }
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            if (IsPostBack) return;
+            BindRemarks(ddlApproveRemark);
+            BindRemarks(ddlRejectRemark);
+            Bind();
+        }
+
+        private void BindRemarks(DropDownList list)
+        {
+            list.DataSource = service.GetReference("ReviewRemark");
+            list.DataTextField = "Name";
+            list.DataValueField = "Name";
+            list.DataBind();
+            list.Items.Insert(0, new ListItem("เลือก Remark", ""));
+        }
         private void Bind() { gridReview.DataSource = service.Search("", "ManagerReview", AssetAccess, "ManagerReview"); gridReview.DataBind(); }
 
         protected void Grid_RowDataBound(object sender, GridViewRowEventArgs e)
@@ -87,10 +102,12 @@ namespace BC.FixedAsset.Web.FixedAsset.Review
             catch (Exception ex) { lblMessage.Text = Server.HtmlEncode(ex.Message); ClientScript.RegisterStartupScript(GetType(), "rejectDialog", "document.getElementById('rejectDialog').hidden=false;", true); }
         }
 
-        private static string DecisionRemark(string value)
+        private string DecisionRemark(string value)
         {
-            if (value != "Spare part" && value != "Fixed Asset") throw new ArgumentException("กรุณาเลือก Remark");
-            return value;
+            if (string.IsNullOrWhiteSpace(value)) throw new ArgumentException("กรุณาเลือก Remark");
+            foreach (DataRow row in service.GetReference("ReviewRemark").Rows)
+                if (string.Equals(Convert.ToString(row["Name"]), value, StringComparison.Ordinal)) return value;
+            throw new ArgumentException("Remark ที่เลือกไม่ได้เปิดใช้งานแล้ว กรุณาเลือกใหม่");
         }
 
         protected void Return_Click(object sender, EventArgs e)
