@@ -10,7 +10,7 @@ namespace BC.FixedAsset.Web.FixedAsset.Survey
     public partial class SurveyList : SecurePage
     {
         protected TextBox txtSearch;
-        protected DropDownList ddlStatus;
+        protected DropDownList ddlStatus, ddlRoomFilter, ddlDepartmentFilter, ddlCustodianFilter;
         protected GridView gridSurvey;
         protected Button btnSearch, btnExport, btnClose;
         protected Label lblMessage;
@@ -19,7 +19,7 @@ namespace BC.FixedAsset.Web.FixedAsset.Survey
         protected Repeater repImages;
         private readonly AssetSurveyService service = new AssetSurveyService();
 
-        protected void Page_Load(object sender, EventArgs e) { if (!IsPostBack) Bind(); }
+        protected void Page_Load(object sender, EventArgs e) { if (!IsPostBack) { BindFilters(); Bind(); } }
         protected void Search_Click(object sender, EventArgs e) => Bind();
         private DataTable Data() => service.Search(txtSearch.Text, ddlStatus.SelectedValue, AssetAccess);
         private string SortExpression { get => Convert.ToString(ViewState["SurveySortExpression"]); set => ViewState["SurveySortExpression"] = value; }
@@ -27,10 +27,42 @@ namespace BC.FixedAsset.Web.FixedAsset.Survey
 
         private void Bind()
         {
-            var table = Data();
-            if (!string.IsNullOrEmpty(SortExpression)) table.DefaultView.Sort = SortClause(SortExpression, SortDirection);
-            gridSurvey.DataSource = table.DefaultView;
+            var view = FilteredData();
+            if (!string.IsNullOrEmpty(SortExpression)) view.Sort = SortClause(SortExpression, SortDirection);
+            gridSurvey.DataSource = view;
             gridSurvey.DataBind();
+        }
+
+        private DataView FilteredData()
+        {
+            var view = Data().DefaultView;
+            var filters = new System.Collections.Generic.List<string>();
+            AddFilter(filters, "RoomName", ddlRoomFilter.SelectedValue);
+            AddFilter(filters, "DepartmentName", ddlDepartmentFilter.SelectedValue);
+            AddFilter(filters, "Custodian", ddlCustodianFilter.SelectedValue);
+            view.RowFilter = string.Join(" AND ", filters);
+            return view;
+        }
+
+        private void BindFilters()
+        {
+            var table = service.Search("", "", AssetAccess);
+            BindFilter(ddlRoomFilter, table, "RoomName", "ทุกห้อง");
+            BindFilter(ddlDepartmentFilter, table, "DepartmentName", "ทุกแผนก");
+            BindFilter(ddlCustodianFilter, table, "Custodian", "ผู้ดูแลทั้งหมด");
+        }
+
+        private static void BindFilter(DropDownList list, DataTable table, string column, string allText)
+        {
+            list.Items.Clear(); list.Items.Add(new ListItem(allText, ""));
+            var values = new System.Collections.Generic.SortedSet<string>(StringComparer.CurrentCultureIgnoreCase);
+            foreach (DataRow row in table.Rows) { var value = Convert.ToString(row[column]).Trim(); if (value.Length > 0) values.Add(value); }
+            foreach (var value in values) list.Items.Add(new ListItem(value, value));
+        }
+
+        private static void AddFilter(System.Collections.Generic.ICollection<string> filters, string column, string value)
+        {
+            if (!string.IsNullOrWhiteSpace(value)) filters.Add("[" + column + "] = '" + value.Replace("'", "''") + "'");
         }
 
         protected void Grid_Sorting(object sender, GridViewSortEventArgs e)
@@ -119,7 +151,7 @@ namespace BC.FixedAsset.Web.FixedAsset.Survey
         protected void Close_Click(object sender, EventArgs e) { pnlDetail.Visible = false; }
         protected void Export_Click(object sender, EventArgs e)
         {
-            var table = Data(); Response.Clear(); Response.ContentType = "application/vnd.ms-excel";
+            var table = FilteredData().ToTable(); Response.Clear(); Response.ContentType = "application/vnd.ms-excel";
             Response.AddHeader("Content-Disposition", "attachment;filename=AssetSurvey-" + DateTime.Now.ToString("yyyyMMdd-HHmm") + ".xls");
             var content = new StringBuilder(); foreach (DataColumn column in table.Columns) content.Append(column.ColumnName).Append('\t'); content.AppendLine();
             foreach (DataRow row in table.Rows) { foreach (var value in row.ItemArray) content.Append(Convert.ToString(value).Replace("\t", " ")).Append('\t'); content.AppendLine(); }

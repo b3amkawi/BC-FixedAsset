@@ -10,9 +10,9 @@ namespace BC.FixedAsset.Web.FixedAsset.Review
     {
         protected GridView gridReview;
         protected TextBox txtReason;
-        protected DropDownList ddlApproveRemark, ddlRejectRemark;
+        protected DropDownList ddlApproveRemark, ddlRejectRemark, ddlRoomFilter, ddlDepartmentFilter, ddlCustodianFilter;
         protected HiddenField hidReturnId, hidApproveId, hidRejectId;
-        protected Button btnReturn, btnApprove, btnReject, btnCloseDetail;
+        protected Button btnReturn, btnApprove, btnReject, btnCloseDetail, btnFilter;
         protected Label lblMessage;
         protected Panel pnlDetail;
         protected Literal litDetail;
@@ -24,6 +24,7 @@ namespace BC.FixedAsset.Web.FixedAsset.Review
             if (IsPostBack) return;
             BindRemarks(ddlApproveRemark);
             BindRemarks(ddlRejectRemark);
+            BindFilters();
             Bind();
         }
 
@@ -35,7 +36,42 @@ namespace BC.FixedAsset.Web.FixedAsset.Review
             list.DataBind();
             list.Items.Insert(0, new ListItem("เลือก Remark", ""));
         }
-        private void Bind() { gridReview.DataSource = service.Search("", "ManagerReview", AssetAccess, "ManagerReview"); gridReview.DataBind(); }
+        protected void Filter_Click(object sender, EventArgs e) { Bind(); }
+
+        private DataTable QueueData() => service.Search("", "ManagerReview", AssetAccess, "ManagerReview");
+
+        private void Bind()
+        {
+            var view = QueueData().DefaultView;
+            var filters = new System.Collections.Generic.List<string>();
+            AddFilter(filters, "RoomName", ddlRoomFilter.SelectedValue);
+            AddFilter(filters, "DepartmentName", ddlDepartmentFilter.SelectedValue);
+            AddFilter(filters, "Custodian", ddlCustodianFilter.SelectedValue);
+            view.RowFilter = string.Join(" AND ", filters);
+            gridReview.DataSource = view;
+            gridReview.DataBind();
+        }
+
+        private void BindFilters()
+        {
+            var table = QueueData();
+            BindFilter(ddlRoomFilter, table, "RoomName", "ทุกห้อง");
+            BindFilter(ddlDepartmentFilter, table, "DepartmentName", "ทุกแผนก");
+            BindFilter(ddlCustodianFilter, table, "Custodian", "ผู้ดูแลทั้งหมด");
+        }
+
+        private static void BindFilter(DropDownList list, DataTable table, string column, string allText)
+        {
+            list.Items.Clear(); list.Items.Add(new ListItem(allText, ""));
+            var values = new System.Collections.Generic.SortedSet<string>(StringComparer.CurrentCultureIgnoreCase);
+            foreach (DataRow row in table.Rows) { var value = Convert.ToString(row[column]).Trim(); if (value.Length > 0) values.Add(value); }
+            foreach (var value in values) list.Items.Add(new ListItem(value, value));
+        }
+
+        private static void AddFilter(System.Collections.Generic.ICollection<string> filters, string column, string value)
+        {
+            if (!string.IsNullOrWhiteSpace(value)) filters.Add("[" + column + "] = '" + value.Replace("'", "''") + "'");
+        }
 
         protected void Grid_RowDataBound(object sender, GridViewRowEventArgs e)
         {

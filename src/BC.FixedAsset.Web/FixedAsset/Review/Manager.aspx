@@ -2,7 +2,7 @@
 <asp:Content ID="Body" ContentPlaceHolderID="MainContent" runat="server">
 <div class="page-head"><div><h1>Asset Manager Review</h1><p>ตรวจสอบรายละเอียดและรูปภาพก่อนอนุมัติ หรือ Return พร้อมเหตุผล</p></div></div>
 <asp:Label ID="lblMessage" runat="server" CssClass="message"/>
-<section class="card table-card"><div class="table-wrap">
+<section class="card table-card"><div class="table-toolbar"><div class="search-box review-filter-box"><asp:DropDownList ID="ddlRoomFilter" runat="server"/><asp:DropDownList ID="ddlDepartmentFilter" runat="server"/><asp:DropDownList ID="ddlCustodianFilter" runat="server"/><asp:Button ID="btnFilter" runat="server" Text="กรองข้อมูล" CssClass="button outline compact" OnClick="Filter_Click"/></div></div><div class="table-wrap">
   <asp:GridView ID="gridReview" runat="server" AutoGenerateColumns="false" GridLines="None" CssClass="asset-table review-table manager-review-table" OnRowCommand="Grid_RowCommand" OnRowDataBound="Grid_RowDataBound">
     <Columns>
       <asp:TemplateField HeaderText="รูป"><ItemTemplate><img class="asset-thumb" src='<%# AttachmentUrl(Eval("ActualAttachmentId")) %>' alt="รูปทรัพย์สิน"/></ItemTemplate></asp:TemplateField>

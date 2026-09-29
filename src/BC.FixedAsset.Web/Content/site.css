@@ -96,6 +96,7 @@ button,a,input,select,textarea{font:inherit}
 .search-box input[type=text]{flex:1 1 220px;min-width:0;width:auto}
 .search-box select{flex:0 0 auto;width:auto;max-width:35%}
 .search-box .button{flex:0 0 auto;white-space:nowrap}
+.survey-filter-box{width:100%;max-width:1120px;flex-wrap:wrap}.survey-filter-box input[type=text]{min-width:260px}.survey-filter-box select,.review-filter-box select{min-width:145px;max-width:220px}.review-filter-box{width:100%;max-width:760px;flex-wrap:wrap}.review-filter-box:before{content:"";display:none}
 .table-wrap{overflow:auto}
 table{width:100%;border-collapse:collapse;min-width:760px}
 th{height:44px;padding:10px 14px;text-align:left;color:#52667d;background:#f8fafc;border-bottom:1px solid var(--border);font-size:.73rem;font-weight:800;white-space:nowrap}
