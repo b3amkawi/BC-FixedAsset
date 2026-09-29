@@ -12,25 +12,32 @@ namespace BC.FixedAsset.Web.FixedAsset.Survey
         protected TextBox txtSearch;
         protected DropDownList ddlStatus, ddlRoomFilter, ddlDepartmentFilter, ddlCustodianFilter;
         protected GridView gridSurvey;
-        protected Button btnSearch, btnExport, btnClose;
-        protected Label lblMessage;
+        protected Button btnSearch, btnExport, btnClose, btnPreviousPage, btnNextPage;
+        protected Label lblMessage, lblPageInfo;
         protected Panel pnlDetail;
         protected Literal litDetail;
         protected Repeater repImages;
         private readonly AssetSurveyService service = new AssetSurveyService();
 
         protected void Page_Load(object sender, EventArgs e) { if (!IsPostBack) { BindFilters(); Bind(); } }
-        protected void Search_Click(object sender, EventArgs e) { gridSurvey.PageIndex = 0; Bind(); }
+        private const int PageSize = 25;
+        private int CurrentPage { get => ViewState["SurveyPage"] == null ? 0 : Convert.ToInt32(ViewState["SurveyPage"]); set => ViewState["SurveyPage"] = Math.Max(0, value); }
+        protected void Search_Click(object sender, EventArgs e) { CurrentPage = 0; Bind(); }
         private DataTable Data() => service.Search(txtSearch.Text, ddlStatus.SelectedValue, AssetAccess);
         private string SortExpression { get => Convert.ToString(ViewState["SurveySortExpression"]); set => ViewState["SurveySortExpression"] = value; }
         private string SortDirection { get => Convert.ToString(ViewState["SurveySortDirection"]); set => ViewState["SurveySortDirection"] = value; }
 
         private void Bind()
         {
-            var view = FilteredData();
-            if (!string.IsNullOrEmpty(SortExpression)) view.Sort = SortClause(SortExpression, SortDirection);
-            gridSurvey.DataSource = view;
+            int totalRows;
+            var table = service.SearchPage(txtSearch.Text, ddlStatus.SelectedValue, AssetAccess, ddlRoomFilter.SelectedValue, ddlDepartmentFilter.SelectedValue, ddlCustodianFilter.SelectedValue, SortExpression, SortDirection, CurrentPage, PageSize, out totalRows);
+            if (table.Rows.Count == 0 && CurrentPage > 0) { CurrentPage--; Bind(); return; }
+            gridSurvey.DataSource = table;
             gridSurvey.DataBind();
+            var totalPages = totalRows == 0 ? 0 : (int)Math.Ceiling(totalRows / (double)PageSize);
+            lblPageInfo.Text = totalRows == 0 ? "ไม่พบข้อมูล" : string.Format("หน้า {0} / {1} · ทั้งหมด {2:N0} รายการ", CurrentPage + 1, totalPages, totalRows);
+            btnPreviousPage.Enabled = CurrentPage > 0;
+            btnNextPage.Enabled = CurrentPage + 1 < totalPages;
         }
 
         private DataView FilteredData()
@@ -46,17 +53,17 @@ namespace BC.FixedAsset.Web.FixedAsset.Survey
 
         private void BindFilters()
         {
-            var table = service.Search("", "", AssetAccess);
-            BindFilter(ddlRoomFilter, table, "RoomName", "ทุกห้อง");
-            BindFilter(ddlDepartmentFilter, table, "DepartmentName", "ทุกแผนก");
+            var table = service.SurveyFilterOptions(AssetAccess);
+            BindFilter(ddlRoomFilter, table, "Room", "ทุกห้อง");
+            BindFilter(ddlDepartmentFilter, table, "Department", "ทุกแผนก");
             BindFilter(ddlCustodianFilter, table, "Custodian", "ผู้ดูแลทั้งหมด");
         }
 
-        private static void BindFilter(DropDownList list, DataTable table, string column, string allText)
+        private static void BindFilter(DropDownList list, DataTable table, string filterType, string allText)
         {
             list.Items.Clear(); list.Items.Add(new ListItem(allText, ""));
             var values = new System.Collections.Generic.SortedSet<string>(StringComparer.CurrentCultureIgnoreCase);
-            foreach (DataRow row in table.Rows) { var value = Convert.ToString(row[column]).Trim(); if (value.Length > 0) values.Add(value); }
+            foreach (DataRow row in table.Rows) { if (!string.Equals(Convert.ToString(row["FilterType"]), filterType, StringComparison.Ordinal)) continue; var value = Convert.ToString(row["Value"]).Trim(); if (value.Length > 0) values.Add(value); }
             foreach (var value in values) list.Items.Add(new ListItem(value, value));
         }
 
@@ -69,15 +76,12 @@ namespace BC.FixedAsset.Web.FixedAsset.Survey
         {
             SortDirection = SortExpression == e.SortExpression && SortDirection == "ASC" ? "DESC" : "ASC";
             SortExpression = e.SortExpression;
-            gridSurvey.PageIndex = 0;
+            CurrentPage = 0;
             Bind();
         }
 
-        protected void Grid_PageIndexChanging(object sender, GridViewPageEventArgs e)
-        {
-            gridSurvey.PageIndex = e.NewPageIndex;
-            Bind();
-        }
+        protected void PreviousPage_Click(object sender, EventArgs e) { CurrentPage--; Bind(); }
+        protected void NextPage_Click(object sender, EventArgs e) { CurrentPage++; Bind(); }
 
         private static string SortClause(string expression, string direction)
         {

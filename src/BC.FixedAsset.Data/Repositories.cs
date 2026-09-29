@@ -196,5 +196,66 @@ namespace BC.FixedAsset.Data
                 var table = new DataTable(); using (var adapter = new SqlDataAdapter(command)) adapter.Fill(table); return table;
             }
         }
+
+        public DataTable SearchPage(string query, string status, SurveyAccessContext access, string room, string department, string custodian, string sortExpression, string sortDirection, int pageIndex, int pageSize, out int totalRows)
+        {
+            var direction = string.Equals(sortDirection, "DESC", StringComparison.OrdinalIgnoreCase) ? " DESC" : " ASC";
+            string orderBy;
+            switch (sortExpression)
+            {
+                case "SurveyNo": orderBy = "s.SurveyNo" + direction; break;
+                case "AssetName": orderBy = "s.AssetName" + direction + ",s.SerialNumber" + direction; break;
+                case "Dimensions": orderBy = "s.WidthCm" + direction + ",s.LengthCm" + direction + ",s.HeightCm" + direction; break;
+                case "WeightKg": orderBy = "s.WeightKg" + direction; break;
+                case "Quantity": orderBy = "s.Quantity" + direction + ",m.UomCode" + direction; break;
+                case "Location": orderBy = "b.BuildingName" + direction + ",fl.FloorName" + direction + ",rm.RoomName" + direction; break;
+                case "Custodian": orderBy = "COALESCE(NULLIF(s.CustodianName,''),u.DisplayName)" + direction; break;
+                case "CreatedByName": orderBy = "creator.DisplayName" + direction; break;
+                default: orderBy = "s.ModifiedUtc DESC,s.SurveyId DESC"; break;
+            }
+            var sql = @"SELECT COUNT(*) OVER() TotalRows,s.SurveyId,s.SurveyNo,s.FixedAssetNo,s.SurveyDate,s.AssetName,s.Brand,s.ModelDescription,s.SerialNumber,
+                s.WidthCm,s.LengthCm,s.HeightCm,s.WeightKg,s.Quantity,m.UomCode,s.PurchaseOrderNo,s.ReceivedDate,s.Status,s.EstimatedValue,
+                d.DepartmentName,COALESCE(NULLIF(s.CustodianName,''),u.DisplayName) AS Custodian,creator.DisplayName AS CreatedByName,b.BuildingName,fl.FloorName,rm.RoomName,s.ReturnReason,
+                (SELECT TOP(1) AttachmentId FROM fa.AssetSurveyAttachments a WHERE a.SurveyId=s.SurveyId AND a.AttachmentType='ACTUAL') ActualAttachmentId
+                FROM fa.AssetSurveys s INNER JOIN mst.Departments d ON d.DepartmentId=s.DepartmentId
+                LEFT JOIN sec.Users u ON u.UserId=s.CustodianUserId LEFT JOIN sec.Users creator ON creator.UserId=s.SurveyorUserId
+                LEFT JOIN mst.Uoms m ON m.UomId=s.UomId LEFT JOIN mst.Buildings b ON b.BuildingId=s.BuildingId
+                LEFT JOIN mst.Floors fl ON fl.FloorId=s.FloorId LEFT JOIN mst.Rooms rm ON rm.RoomId=s.RoomId
+                WHERE (@Query='' OR s.SurveyNo LIKE '%'+@Query+'%' OR ISNULL(s.FixedAssetNo,'') LIKE '%'+@Query+'%' OR s.AssetName LIKE '%'+@Query+'%' OR ISNULL(s.SerialNumber,'') LIKE '%'+@Query+'%' OR COALESCE(NULLIF(s.CustodianName,''),u.DisplayName,'') LIKE '%'+@Query+'%')
+                  AND (@Status='' OR s.Status=@Status) AND (@Room='' OR rm.RoomName=@Room) AND (@Department='' OR d.DepartmentName=@Department)
+                  AND (@Custodian='' OR COALESCE(NULLIF(s.CustodianName,''),u.DisplayName)=@Custodian)
+                  AND (@IsAdmin=1 OR s.SurveyorUserId=@UserId)
+                ORDER BY " + orderBy + @" OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+            using (var connection = Db.OpenConnection())
+            using (var command = new SqlCommand(sql, connection))
+            {
+                command.Parameters.Add(Db.Parameter("@Query", query ?? string.Empty, SqlDbType.NVarChar, 150));
+                command.Parameters.Add(Db.Parameter("@Status", status ?? string.Empty, SqlDbType.NVarChar, 30));
+                command.Parameters.Add(Db.Parameter("@Room", room ?? string.Empty, SqlDbType.NVarChar, 200));
+                command.Parameters.Add(Db.Parameter("@Department", department ?? string.Empty, SqlDbType.NVarChar, 200));
+                command.Parameters.Add(Db.Parameter("@Custodian", custodian ?? string.Empty, SqlDbType.NVarChar, 250));
+                command.Parameters.Add(Db.Parameter("@UserId", access.UserId, SqlDbType.Int));
+                command.Parameters.Add(Db.Parameter("@IsAdmin", access.IsSystemAdministrator, SqlDbType.Bit));
+                command.Parameters.Add(Db.Parameter("@Offset", Math.Max(0, pageIndex) * pageSize, SqlDbType.Int));
+                command.Parameters.Add(Db.Parameter("@PageSize", pageSize, SqlDbType.Int));
+                var table = new DataTable(); using (var adapter = new SqlDataAdapter(command)) adapter.Fill(table);
+                totalRows = table.Rows.Count == 0 ? 0 : Convert.ToInt32(table.Rows[0]["TotalRows"]);
+                table.Columns.Remove("TotalRows");
+                return table;
+            }
+        }
+
+        public DataTable SurveyFilterOptions(SurveyAccessContext access)
+        {
+            const string sql = @"SELECT DISTINCT 'Room' FilterType,rm.RoomName Value FROM fa.AssetSurveys s JOIN mst.Rooms rm ON rm.RoomId=s.RoomId WHERE (@IsAdmin=1 OR s.SurveyorUserId=@UserId)
+                UNION SELECT DISTINCT 'Department',d.DepartmentName FROM fa.AssetSurveys s JOIN mst.Departments d ON d.DepartmentId=s.DepartmentId WHERE (@IsAdmin=1 OR s.SurveyorUserId=@UserId)
+                UNION SELECT DISTINCT 'Custodian',COALESCE(NULLIF(s.CustodianName,''),u.DisplayName) FROM fa.AssetSurveys s LEFT JOIN sec.Users u ON u.UserId=s.CustodianUserId WHERE (@IsAdmin=1 OR s.SurveyorUserId=@UserId) AND COALESCE(NULLIF(s.CustodianName,''),u.DisplayName) IS NOT NULL
+                ORDER BY FilterType,Value;";
+            using (var connection = Db.OpenConnection()) using (var command = new SqlCommand(sql, connection))
+            {
+                command.Parameters.Add(Db.Parameter("@UserId", access.UserId, SqlDbType.Int)); command.Parameters.Add(Db.Parameter("@IsAdmin", access.IsSystemAdministrator, SqlDbType.Bit));
+                var table = new DataTable(); using (var adapter = new SqlDataAdapter(command)) adapter.Fill(table); return table;
+            }
+        }
     }
 }
