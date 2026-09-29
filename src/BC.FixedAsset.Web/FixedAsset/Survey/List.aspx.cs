@@ -20,7 +20,7 @@ namespace BC.FixedAsset.Web.FixedAsset.Survey
         private readonly AssetSurveyService service = new AssetSurveyService();
 
         protected void Page_Load(object sender, EventArgs e) { if (!IsPostBack) { BindFilters(); Bind(); } }
-        private const int PageSize = 25;
+        private const int PageSize = 20;
         private int CurrentPage { get => ViewState["SurveyPage"] == null ? 0 : Convert.ToInt32(ViewState["SurveyPage"]); set => ViewState["SurveyPage"] = Math.Max(0, value); }
         protected void Search_Click(object sender, EventArgs e) { CurrentPage = 0; Bind(); }
         private DataTable Data() => service.Search(txtSearch.Text, ddlStatus.SelectedValue, AssetAccess);
