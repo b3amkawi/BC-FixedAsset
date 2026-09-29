@@ -30,7 +30,7 @@ namespace BC.FixedAsset.Web.FixedAsset.Survey
         private void Bind()
         {
             int totalRows;
-            var table = service.SearchPage(txtSearch.Text, ddlStatus.SelectedValue, AssetAccess, ddlRoomFilter.SelectedValue, ddlDepartmentFilter.SelectedValue, ddlCustodianFilter.SelectedValue, SortExpression, SortDirection, CurrentPage, PageSize, out totalRows);
+            var table = service.SearchPage(txtSearch.Text, ddlStatus.SelectedValue, AssetAccess, ddlRoomFilter.SelectedValue, ddlDepartmentFilter.SelectedValue, ddlCustodianFilter.SelectedValue, SortExpression, SortDirection, CurrentPage, PageSize, "", out totalRows);
             if (table.Rows.Count == 0 && CurrentPage > 0) { CurrentPage--; Bind(); return; }
             gridSurvey.DataSource = table;
             gridSurvey.DataBind();

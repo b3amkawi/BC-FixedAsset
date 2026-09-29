@@ -197,7 +197,7 @@ namespace BC.FixedAsset.Data
             }
         }
 
-        public DataTable SearchPage(string query, string status, SurveyAccessContext access, string room, string department, string custodian, string sortExpression, string sortDirection, int pageIndex, int pageSize, out int totalRows)
+        public DataTable SearchPage(string query, string status, SurveyAccessContext access, string room, string department, string custodian, string sortExpression, string sortDirection, int pageIndex, int pageSize, string queueStatus, out int totalRows)
         {
             var direction = string.Equals(sortDirection, "DESC", StringComparison.OrdinalIgnoreCase) ? " DESC" : " ASC";
             string orderBy;
@@ -224,7 +224,9 @@ namespace BC.FixedAsset.Data
                 WHERE (@Query='' OR s.SurveyNo LIKE '%'+@Query+'%' OR ISNULL(s.FixedAssetNo,'') LIKE '%'+@Query+'%' OR s.AssetName LIKE '%'+@Query+'%' OR ISNULL(s.SerialNumber,'') LIKE '%'+@Query+'%' OR COALESCE(NULLIF(s.CustodianName,''),u.DisplayName,'') LIKE '%'+@Query+'%')
                   AND (@Status='' OR s.Status=@Status) AND (@Room='' OR rm.RoomName=@Room) AND (@Department='' OR d.DepartmentName=@Department)
                   AND (@Custodian='' OR COALESCE(NULLIF(s.CustodianName,''),u.DisplayName)=@Custodian)
-                  AND (@IsAdmin=1 OR s.SurveyorUserId=@UserId)
+                  AND (@IsAdmin=1 OR s.SurveyorUserId=@UserId
+                    OR (@QueueStatus='ManagerReview' AND @RoleCode IN('ASSET_MANAGER','DEPT_MANAGER') AND s.Status='ManagerReview')
+                    OR (@QueueStatus='FinanceReview' AND @RoleCode='FINANCE' AND s.Status='FinanceReview'))
                 ORDER BY " + orderBy + @" OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
             using (var connection = Db.OpenConnection())
             using (var command = new SqlCommand(sql, connection))
@@ -236,6 +238,8 @@ namespace BC.FixedAsset.Data
                 command.Parameters.Add(Db.Parameter("@Custodian", custodian ?? string.Empty, SqlDbType.NVarChar, 250));
                 command.Parameters.Add(Db.Parameter("@UserId", access.UserId, SqlDbType.Int));
                 command.Parameters.Add(Db.Parameter("@IsAdmin", access.IsSystemAdministrator, SqlDbType.Bit));
+                command.Parameters.Add(Db.Parameter("@RoleCode", access.RoleCode ?? string.Empty, SqlDbType.NVarChar, 50));
+                command.Parameters.Add(Db.Parameter("@QueueStatus", queueStatus ?? string.Empty, SqlDbType.NVarChar, 30));
                 command.Parameters.Add(Db.Parameter("@Offset", Math.Max(0, pageIndex) * pageSize, SqlDbType.Int));
                 command.Parameters.Add(Db.Parameter("@PageSize", pageSize, SqlDbType.Int));
                 var table = new DataTable(); using (var adapter = new SqlDataAdapter(command)) adapter.Fill(table);
@@ -245,15 +249,16 @@ namespace BC.FixedAsset.Data
             }
         }
 
-        public DataTable SurveyFilterOptions(SurveyAccessContext access)
+        public DataTable SurveyFilterOptions(SurveyAccessContext access, string queueStatus)
         {
-            const string sql = @"SELECT DISTINCT 'Room' FilterType,rm.RoomName Value FROM fa.AssetSurveys s JOIN mst.Rooms rm ON rm.RoomId=s.RoomId WHERE (@IsAdmin=1 OR s.SurveyorUserId=@UserId)
-                UNION SELECT DISTINCT 'Department',d.DepartmentName FROM fa.AssetSurveys s JOIN mst.Departments d ON d.DepartmentId=s.DepartmentId WHERE (@IsAdmin=1 OR s.SurveyorUserId=@UserId)
-                UNION SELECT DISTINCT 'Custodian',COALESCE(NULLIF(s.CustodianName,''),u.DisplayName) FROM fa.AssetSurveys s LEFT JOIN sec.Users u ON u.UserId=s.CustodianUserId WHERE (@IsAdmin=1 OR s.SurveyorUserId=@UserId) AND COALESCE(NULLIF(s.CustodianName,''),u.DisplayName) IS NOT NULL
+            const string sql = @"SELECT DISTINCT 'Room' FilterType,rm.RoomName Value FROM fa.AssetSurveys s JOIN mst.Rooms rm ON rm.RoomId=s.RoomId WHERE (@IsAdmin=1 OR s.SurveyorUserId=@UserId OR (@QueueStatus='ManagerReview' AND @RoleCode IN('ASSET_MANAGER','DEPT_MANAGER') AND s.Status='ManagerReview') OR (@QueueStatus='FinanceReview' AND @RoleCode='FINANCE' AND s.Status='FinanceReview'))
+                UNION SELECT DISTINCT 'Department',d.DepartmentName FROM fa.AssetSurveys s JOIN mst.Departments d ON d.DepartmentId=s.DepartmentId WHERE (@IsAdmin=1 OR s.SurveyorUserId=@UserId OR (@QueueStatus='ManagerReview' AND @RoleCode IN('ASSET_MANAGER','DEPT_MANAGER') AND s.Status='ManagerReview') OR (@QueueStatus='FinanceReview' AND @RoleCode='FINANCE' AND s.Status='FinanceReview'))
+                UNION SELECT DISTINCT 'Custodian',COALESCE(NULLIF(s.CustodianName,''),u.DisplayName) FROM fa.AssetSurveys s LEFT JOIN sec.Users u ON u.UserId=s.CustodianUserId WHERE (@IsAdmin=1 OR s.SurveyorUserId=@UserId OR (@QueueStatus='ManagerReview' AND @RoleCode IN('ASSET_MANAGER','DEPT_MANAGER') AND s.Status='ManagerReview') OR (@QueueStatus='FinanceReview' AND @RoleCode='FINANCE' AND s.Status='FinanceReview')) AND COALESCE(NULLIF(s.CustodianName,''),u.DisplayName) IS NOT NULL
                 ORDER BY FilterType,Value;";
             using (var connection = Db.OpenConnection()) using (var command = new SqlCommand(sql, connection))
             {
                 command.Parameters.Add(Db.Parameter("@UserId", access.UserId, SqlDbType.Int)); command.Parameters.Add(Db.Parameter("@IsAdmin", access.IsSystemAdministrator, SqlDbType.Bit));
+                command.Parameters.Add(Db.Parameter("@RoleCode", access.RoleCode ?? string.Empty, SqlDbType.NVarChar, 50)); command.Parameters.Add(Db.Parameter("@QueueStatus", queueStatus ?? string.Empty, SqlDbType.NVarChar, 30));
                 var table = new DataTable(); using (var adapter = new SqlDataAdapter(command)) adapter.Fill(table); return table;
             }
         }

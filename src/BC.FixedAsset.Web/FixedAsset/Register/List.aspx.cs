@@ -11,8 +11,8 @@ namespace BC.FixedAsset.Web.FixedAsset.Register
     {
         protected TextBox txtSearch;
         protected GridView gridAssets;
-        protected Button btnSearch, btnClose;
-        protected Label lblMessage;
+        protected Button btnSearch, btnClose, btnPreviousPage, btnNextPage;
+        protected Label lblMessage, lblPageInfo;
         protected Panel pnlDetail;
         protected Panel pnlEdit;
         protected Literal litDetail;
@@ -21,12 +21,25 @@ namespace BC.FixedAsset.Web.FixedAsset.Register
         protected TextBox txtAssetName, txtBrand, txtModel, txtSerial, txtCustodian, txtQuantity, txtStatus, txtReceivedDate, txtPurchaseOrder, txtCost;
         protected DropDownList ddlCategory, ddlDepartment, ddlUom, ddlBuilding, ddlFloor, ddlRoom;
         private readonly AssetSurveyService service = new AssetSurveyService();
+        private const int PageSize = 20;
+        private int CurrentPage { get => ViewState["RegisterPage"] == null ? 0 : Convert.ToInt32(ViewState["RegisterPage"]); set => ViewState["RegisterPage"] = Math.Max(0, value); }
         private bool? canEdit;
         private bool CanEdit => canEdit ?? (canEdit = AssetAccess.IsSystemAdministrator).Value;
 
         protected void Page_Load(object sender, EventArgs e) { if (!IsPostBack) Bind(); }
-        protected void Search_Click(object sender, EventArgs e) => Bind();
-        private void Bind() { gridAssets.DataSource = service.GetRegister(txtSearch.Text.Trim()); gridAssets.DataBind(); }
+        protected void Search_Click(object sender, EventArgs e) { CurrentPage = 0; Bind(); }
+        private void Bind()
+        {
+            int totalRows;
+            var table = service.GetRegisterPage(txtSearch.Text.Trim(), CurrentPage, PageSize, out totalRows);
+            if (table.Rows.Count == 0 && CurrentPage > 0) { CurrentPage--; Bind(); return; }
+            gridAssets.DataSource = table; gridAssets.DataBind();
+            var totalPages = totalRows == 0 ? 0 : (int)Math.Ceiling(totalRows / (double)PageSize);
+            lblPageInfo.Text = totalRows == 0 ? "ไม่พบข้อมูล" : string.Format("หน้า {0} / {1} · ทั้งหมด {2:N0} รายการ", CurrentPage + 1, totalPages, totalRows);
+            btnPreviousPage.Enabled = CurrentPage > 0; btnNextPage.Enabled = CurrentPage + 1 < totalPages;
+        }
+        protected void PreviousPage_Click(object sender, EventArgs e) { CurrentPage--; Bind(); }
+        protected void NextPage_Click(object sender, EventArgs e) { CurrentPage++; Bind(); }
 
         protected void Grid_RowDataBound(object sender, GridViewRowEventArgs e)
         {

@@ -11,15 +11,28 @@ namespace BC.FixedAsset.Web.FixedAsset.Review
         protected GridView gridReview;
         protected TextBox txtReason;
         protected HiddenField hidReturnId, hidApproveId;
-        protected Button btnReturn, btnApprove, btnCloseDetail, btnApproveFromDetail;
-        protected Label lblMessage;
+        protected Button btnReturn, btnApprove, btnCloseDetail, btnApproveFromDetail, btnPreviousPage, btnNextPage;
+        protected Label lblMessage, lblPageInfo;
         protected Panel pnlDetail;
         protected Literal litDetail;
         protected Repeater repImages;
         private readonly AssetSurveyService service = new AssetSurveyService();
+        private const int PageSize = 20;
+        private int CurrentPage { get => ViewState["FinancePage"] == null ? 0 : Convert.ToInt32(ViewState["FinancePage"]); set => ViewState["FinancePage"] = Math.Max(0, value); }
 
         protected void Page_Load(object sender, EventArgs e) { if (!IsPostBack) Bind(); }
-        private void Bind() { gridReview.DataSource = service.Search("", "FinanceReview", AssetAccess, "FinanceReview"); gridReview.DataBind(); }
+        private void Bind()
+        {
+            int totalRows;
+            var table = service.SearchPage("", "FinanceReview", AssetAccess, "", "", "", "", "", CurrentPage, PageSize, "FinanceReview", out totalRows);
+            if (table.Rows.Count == 0 && CurrentPage > 0) { CurrentPage--; Bind(); return; }
+            gridReview.DataSource = table; gridReview.DataBind();
+            var totalPages = totalRows == 0 ? 0 : (int)Math.Ceiling(totalRows / (double)PageSize);
+            lblPageInfo.Text = totalRows == 0 ? "ไม่พบข้อมูล" : string.Format("หน้า {0} / {1} · ทั้งหมด {2:N0} รายการ", CurrentPage + 1, totalPages, totalRows);
+            btnPreviousPage.Enabled = CurrentPage > 0; btnNextPage.Enabled = CurrentPage + 1 < totalPages;
+        }
+        protected void PreviousPage_Click(object sender, EventArgs e) { CurrentPage--; Bind(); }
+        protected void NextPage_Click(object sender, EventArgs e) { CurrentPage++; Bind(); }
 
         protected void Grid_RowDataBound(object sender, GridViewRowEventArgs e)
         {

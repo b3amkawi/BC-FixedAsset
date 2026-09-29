@@ -12,12 +12,14 @@ namespace BC.FixedAsset.Web.FixedAsset.Review
         protected TextBox txtReason;
         protected DropDownList ddlApproveRemark, ddlRejectRemark, ddlRoomFilter, ddlDepartmentFilter, ddlCustodianFilter;
         protected HiddenField hidReturnId, hidApproveId, hidRejectId;
-        protected Button btnReturn, btnApprove, btnReject, btnCloseDetail, btnFilter;
-        protected Label lblMessage;
+        protected Button btnReturn, btnApprove, btnReject, btnCloseDetail, btnFilter, btnPreviousPage, btnNextPage;
+        protected Label lblMessage, lblPageInfo;
         protected Panel pnlDetail;
         protected Literal litDetail;
         protected Repeater repImages;
         private readonly AssetSurveyService service = new AssetSurveyService();
+        private const int PageSize = 20;
+        private int CurrentPage { get => ViewState["ManagerPage"] == null ? 0 : Convert.ToInt32(ViewState["ManagerPage"]); set => ViewState["ManagerPage"] = Math.Max(0, value); }
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -36,42 +38,42 @@ namespace BC.FixedAsset.Web.FixedAsset.Review
             list.DataBind();
             list.Items.Insert(0, new ListItem("เลือก Remark", ""));
         }
-        protected void Filter_Click(object sender, EventArgs e) { Bind(); }
-
-        private DataTable QueueData() => service.Search("", "ManagerReview", AssetAccess, "ManagerReview");
+        protected void Filter_Click(object sender, EventArgs e) { CurrentPage = 0; Bind(); }
 
         private void Bind()
         {
-            var view = QueueData().DefaultView;
-            var filters = new System.Collections.Generic.List<string>();
-            AddFilter(filters, "RoomName", ddlRoomFilter.SelectedValue);
-            AddFilter(filters, "DepartmentName", ddlDepartmentFilter.SelectedValue);
-            AddFilter(filters, "Custodian", ddlCustodianFilter.SelectedValue);
-            view.RowFilter = string.Join(" AND ", filters);
-            gridReview.DataSource = view;
+            int totalRows;
+            var table = service.SearchPage("", "ManagerReview", AssetAccess, ddlRoomFilter.SelectedValue, ddlDepartmentFilter.SelectedValue, ddlCustodianFilter.SelectedValue, "", "", CurrentPage, PageSize, "ManagerReview", out totalRows);
+            if (table.Rows.Count == 0 && CurrentPage > 0) { CurrentPage--; Bind(); return; }
+            gridReview.DataSource = table;
             gridReview.DataBind();
+            UpdatePager(totalRows);
         }
 
         private void BindFilters()
         {
-            var table = QueueData();
-            BindFilter(ddlRoomFilter, table, "RoomName", "ทุกห้อง");
-            BindFilter(ddlDepartmentFilter, table, "DepartmentName", "ทุกแผนก");
+            var table = service.SurveyFilterOptions(AssetAccess, "ManagerReview");
+            BindFilter(ddlRoomFilter, table, "Room", "ทุกห้อง");
+            BindFilter(ddlDepartmentFilter, table, "Department", "ทุกแผนก");
             BindFilter(ddlCustodianFilter, table, "Custodian", "ผู้ดูแลทั้งหมด");
         }
 
-        private static void BindFilter(DropDownList list, DataTable table, string column, string allText)
+        private static void BindFilter(DropDownList list, DataTable table, string filterType, string allText)
         {
             list.Items.Clear(); list.Items.Add(new ListItem(allText, ""));
             var values = new System.Collections.Generic.SortedSet<string>(StringComparer.CurrentCultureIgnoreCase);
-            foreach (DataRow row in table.Rows) { var value = Convert.ToString(row[column]).Trim(); if (value.Length > 0) values.Add(value); }
+            foreach (DataRow row in table.Rows) { if (!string.Equals(Convert.ToString(row["FilterType"]), filterType, StringComparison.Ordinal)) continue; var value = Convert.ToString(row["Value"]).Trim(); if (value.Length > 0) values.Add(value); }
             foreach (var value in values) list.Items.Add(new ListItem(value, value));
         }
 
-        private static void AddFilter(System.Collections.Generic.ICollection<string> filters, string column, string value)
+        private void UpdatePager(int totalRows)
         {
-            if (!string.IsNullOrWhiteSpace(value)) filters.Add("[" + column + "] = '" + value.Replace("'", "''") + "'");
+            var totalPages = totalRows == 0 ? 0 : (int)Math.Ceiling(totalRows / (double)PageSize);
+            lblPageInfo.Text = totalRows == 0 ? "ไม่พบข้อมูล" : string.Format("หน้า {0} / {1} · ทั้งหมด {2:N0} รายการ", CurrentPage + 1, totalPages, totalRows);
+            btnPreviousPage.Enabled = CurrentPage > 0; btnNextPage.Enabled = CurrentPage + 1 < totalPages;
         }
+        protected void PreviousPage_Click(object sender, EventArgs e) { CurrentPage--; Bind(); }
+        protected void NextPage_Click(object sender, EventArgs e) { CurrentPage++; Bind(); }
 
         protected void Grid_RowDataBound(object sender, GridViewRowEventArgs e)
         {
