@@ -19,7 +19,7 @@ namespace BC.FixedAsset.Web.FixedAsset.Survey
         protected Repeater repImages;
         private readonly AssetSurveyService service = new AssetSurveyService();
 
-        protected void Page_Load(object sender, EventArgs e) { if (!IsPostBack) { BindFilters(); Bind(); } }
+        protected void Page_Load(object sender, EventArgs e) { if (!IsPostBack) { var table = service.Search("", "", AssetAccess); BindFilters(table); Bind(table); } }
         protected void Search_Click(object sender, EventArgs e) => Bind();
         private DataTable Data() => service.Search(txtSearch.Text, ddlStatus.SelectedValue, AssetAccess);
         private string SortExpression { get => Convert.ToString(ViewState["SurveySortExpression"]); set => ViewState["SurveySortExpression"] = value; }
@@ -27,15 +27,22 @@ namespace BC.FixedAsset.Web.FixedAsset.Survey
 
         private void Bind()
         {
-            var view = FilteredData();
+            Bind(Data());
+        }
+
+        private void Bind(DataTable table)
+        {
+            var view = FilteredData(table);
             if (!string.IsNullOrEmpty(SortExpression)) view.Sort = SortClause(SortExpression, SortDirection);
             gridSurvey.DataSource = view;
             gridSurvey.DataBind();
         }
 
-        private DataView FilteredData()
+        private DataView FilteredData() => FilteredData(Data());
+
+        private DataView FilteredData(DataTable table)
         {
-            var view = Data().DefaultView;
+            var view = table.DefaultView;
             var filters = new System.Collections.Generic.List<string>();
             AddFilter(filters, "RoomName", ddlRoomFilter.SelectedValue);
             AddFilter(filters, "DepartmentName", ddlDepartmentFilter.SelectedValue);
@@ -44,9 +51,8 @@ namespace BC.FixedAsset.Web.FixedAsset.Survey
             return view;
         }
 
-        private void BindFilters()
+        private void BindFilters(DataTable table)
         {
-            var table = service.Search("", "", AssetAccess);
             BindFilter(ddlRoomFilter, table, "RoomName", "ทุกห้อง");
             BindFilter(ddlDepartmentFilter, table, "DepartmentName", "ทุกแผนก");
             BindFilter(ddlCustodianFilter, table, "Custodian", "ผู้ดูแลทั้งหมด");
