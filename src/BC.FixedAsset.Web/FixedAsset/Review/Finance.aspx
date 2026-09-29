@@ -5,7 +5,7 @@
 <section class="card table-card"><div class="table-toolbar"><div class="search-box review-filter-box"><asp:DropDownList ID="ddlRoomFilter" runat="server"/><asp:DropDownList ID="ddlDepartmentFilter" runat="server"/><asp:DropDownList ID="ddlCustodianFilter" runat="server"/><asp:Button ID="btnFilter" runat="server" Text="กรองข้อมูล" CssClass="button outline compact" OnClick="Filter_Click"/></div></div><div class="table-wrap">
   <asp:GridView ID="gridReview" runat="server" AutoGenerateColumns="false" GridLines="None" CssClass="asset-table review-table" OnRowCommand="Grid_RowCommand" OnRowDataBound="Grid_RowDataBound">
     <Columns>
-      <asp:TemplateField HeaderText="รูป"><ItemTemplate><img class="asset-thumb" src='<%# AttachmentUrl(Eval("ActualAttachmentId")) %>' alt="รูปทรัพย์สิน"/></ItemTemplate></asp:TemplateField>
+      <asp:TemplateField HeaderText="รูป"><ItemTemplate><img class="asset-thumb" loading="lazy" decoding="async" fetchpriority="low" src='<%# AttachmentUrl(Eval("ActualAttachmentId")) %>' alt="รูปทรัพย์สิน"/></ItemTemplate></asp:TemplateField>
       <asp:BoundField DataField="SurveyNo" HeaderText="เลขที่"/>
       <asp:TemplateField HeaderText="ทรัพย์สิน"><ItemTemplate><b><%# Eval("AssetName") %></b><small class="cell-sub"><%# Eval("SerialNumber") %></small></ItemTemplate></asp:TemplateField>
       <asp:BoundField DataField="PurchaseOrderNo" HeaderText="PO"/>
