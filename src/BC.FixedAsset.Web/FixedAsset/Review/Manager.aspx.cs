@@ -24,9 +24,8 @@ namespace BC.FixedAsset.Web.FixedAsset.Review
             if (IsPostBack) return;
             BindRemarks(ddlApproveRemark);
             BindRemarks(ddlRejectRemark);
-            var table = QueueData();
-            BindFilters(table);
-            Bind(table);
+            BindFilters();
+            Bind();
         }
 
         private void BindRemarks(DropDownList list)
@@ -43,12 +42,7 @@ namespace BC.FixedAsset.Web.FixedAsset.Review
 
         private void Bind()
         {
-            Bind(QueueData());
-        }
-
-        private void Bind(DataTable table)
-        {
-            var view = table.DefaultView;
+            var view = QueueData().DefaultView;
             var filters = new System.Collections.Generic.List<string>();
             AddFilter(filters, "RoomName", ddlRoomFilter.SelectedValue);
             AddFilter(filters, "DepartmentName", ddlDepartmentFilter.SelectedValue);
@@ -58,8 +52,9 @@ namespace BC.FixedAsset.Web.FixedAsset.Review
             gridReview.DataBind();
         }
 
-        private void BindFilters(DataTable table)
+        private void BindFilters()
         {
+            var table = QueueData();
             BindFilter(ddlRoomFilter, table, "RoomName", "ทุกห้อง");
             BindFilter(ddlDepartmentFilter, table, "DepartmentName", "ทุกแผนก");
             BindFilter(ddlCustodianFilter, table, "Custodian", "ผู้ดูแลทั้งหมด");

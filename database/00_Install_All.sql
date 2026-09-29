@@ -15,7 +15,6 @@
 :r .\06_Upgrade_v4.sql
 :r .\09_Remove_Password_Policy.sql
 :r .\10_Add_Review_Remarks.sql
-:r .\11_Performance_Indexes.sql
 
 PRINT N'BCFixedAsset installation completed.';
 GO
