@@ -20,7 +20,7 @@ namespace BC.FixedAsset.Web.FixedAsset.Survey
         private readonly AssetSurveyService service = new AssetSurveyService();
 
         protected void Page_Load(object sender, EventArgs e) { if (!IsPostBack) { var table = service.Search("", "", AssetAccess); BindFilters(table); Bind(table); } }
-        protected void Search_Click(object sender, EventArgs e) => Bind();
+        protected void Search_Click(object sender, EventArgs e) { gridSurvey.PageIndex = 0; Bind(); }
         private DataTable Data() => service.Search(txtSearch.Text, ddlStatus.SelectedValue, AssetAccess);
         private string SortExpression { get => Convert.ToString(ViewState["SurveySortExpression"]); set => ViewState["SurveySortExpression"] = value; }
         private string SortDirection { get => Convert.ToString(ViewState["SurveySortDirection"]); set => ViewState["SurveySortDirection"] = value; }
@@ -75,6 +75,13 @@ namespace BC.FixedAsset.Web.FixedAsset.Survey
         {
             SortDirection = SortExpression == e.SortExpression && SortDirection == "ASC" ? "DESC" : "ASC";
             SortExpression = e.SortExpression;
+            gridSurvey.PageIndex = 0;
+            Bind();
+        }
+
+        protected void Grid_PageIndexChanging(object sender, GridViewPageEventArgs e)
+        {
+            gridSurvey.PageIndex = e.NewPageIndex;
             Bind();
         }
 
