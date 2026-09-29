@@ -10,8 +10,9 @@ namespace BC.FixedAsset.Web.FixedAsset.Review
     {
         protected GridView gridReview;
         protected TextBox txtReason;
+        protected DropDownList ddlRoomFilter, ddlDepartmentFilter, ddlCustodianFilter;
         protected HiddenField hidReturnId, hidApproveId;
-        protected Button btnReturn, btnApprove, btnCloseDetail, btnApproveFromDetail, btnPreviousPage, btnNextPage;
+        protected Button btnReturn, btnApprove, btnCloseDetail, btnApproveFromDetail, btnPreviousPage, btnNextPage, btnFilter;
         protected Label lblMessage, lblPageInfo;
         protected Panel pnlDetail;
         protected Literal litDetail;
@@ -20,11 +21,12 @@ namespace BC.FixedAsset.Web.FixedAsset.Review
         private const int PageSize = 20;
         private int CurrentPage { get => ViewState["FinancePage"] == null ? 0 : Convert.ToInt32(ViewState["FinancePage"]); set => ViewState["FinancePage"] = Math.Max(0, value); }
 
-        protected void Page_Load(object sender, EventArgs e) { if (!IsPostBack) Bind(); }
+        protected void Page_Load(object sender, EventArgs e) { if (!IsPostBack) { BindFilters(); Bind(); } }
+        protected void Filter_Click(object sender, EventArgs e) { CurrentPage = 0; Bind(); }
         private void Bind()
         {
             int totalRows;
-            var table = service.SearchPage("", "FinanceReview", AssetAccess, "", "", "", "", "", CurrentPage, PageSize, "FinanceReview", out totalRows);
+            var table = service.SearchPage("", "FinanceReview", AssetAccess, ddlRoomFilter.SelectedValue, ddlDepartmentFilter.SelectedValue, ddlCustodianFilter.SelectedValue, "", "", CurrentPage, PageSize, "FinanceReview", out totalRows);
             if (table.Rows.Count == 0 && CurrentPage > 0) { CurrentPage--; Bind(); return; }
             gridReview.DataSource = table; gridReview.DataBind();
             var totalPages = totalRows == 0 ? 0 : (int)Math.Ceiling(totalRows / (double)PageSize);
@@ -33,6 +35,18 @@ namespace BC.FixedAsset.Web.FixedAsset.Review
         }
         protected void PreviousPage_Click(object sender, EventArgs e) { CurrentPage--; Bind(); }
         protected void NextPage_Click(object sender, EventArgs e) { CurrentPage++; Bind(); }
+        private void BindFilters()
+        {
+            var table = service.SurveyFilterOptions(AssetAccess, "FinanceReview");
+            BindFilter(ddlRoomFilter, table, "Room", "ทุกห้อง"); BindFilter(ddlDepartmentFilter, table, "Department", "ทุกแผนก"); BindFilter(ddlCustodianFilter, table, "Custodian", "ผู้ดูแลทั้งหมด");
+        }
+        private static void BindFilter(DropDownList list, DataTable table, string filterType, string allText)
+        {
+            list.Items.Clear(); list.Items.Add(new ListItem(allText, ""));
+            var values = new System.Collections.Generic.SortedSet<string>(StringComparer.CurrentCultureIgnoreCase);
+            foreach (DataRow row in table.Rows) { if (!string.Equals(Convert.ToString(row["FilterType"]), filterType, StringComparison.Ordinal)) continue; var value = Convert.ToString(row["Value"]).Trim(); if (value.Length > 0) values.Add(value); }
+            foreach (var value in values) list.Items.Add(new ListItem(value, value));
+        }
 
         protected void Grid_RowDataBound(object sender, GridViewRowEventArgs e)
         {

@@ -98,7 +98,8 @@ namespace BC.FixedAsset.Services
         public DataTable GetReference(string type) => _fixedAssets.GetReference(type);
         public DashboardSummary GetDashboard() => _fixedAssets.GetDashboard();
         public DataTable GetRegister(string query) => _fixedAssets.GetRegister(query);
-        public DataTable GetRegisterPage(string query, int pageIndex, int pageSize, out int totalRows) => _fixedAssets.GetRegisterPage(query, pageIndex, pageSize, out totalRows);
+        public DataTable GetRegisterPage(string query, string room, string department, string custodian, int pageIndex, int pageSize, out int totalRows) => _fixedAssets.GetRegisterPage(query, room, department, custodian, pageIndex, pageSize, out totalRows);
+        public DataTable RegisterFilterOptions() => _fixedAssets.GetRegisterFilterOptions();
         public DataTable GetRegisterDetail(long id) => _fixedAssets.GetRegisterDetail(id);
         public RegisteredAssetEdit GetRegisterForEdit(long id, SurveyAccessContext access)
         {

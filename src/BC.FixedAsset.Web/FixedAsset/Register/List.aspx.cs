@@ -19,19 +19,19 @@ namespace BC.FixedAsset.Web.FixedAsset.Register
         protected Repeater repImages;
         protected HiddenField hidEditId, hidRowVersion;
         protected TextBox txtAssetName, txtBrand, txtModel, txtSerial, txtCustodian, txtQuantity, txtStatus, txtReceivedDate, txtPurchaseOrder, txtCost;
-        protected DropDownList ddlCategory, ddlDepartment, ddlUom, ddlBuilding, ddlFloor, ddlRoom;
+        protected DropDownList ddlCategory, ddlDepartment, ddlUom, ddlBuilding, ddlFloor, ddlRoom, ddlRoomFilter, ddlDepartmentFilter, ddlCustodianFilter;
         private readonly AssetSurveyService service = new AssetSurveyService();
         private const int PageSize = 20;
         private int CurrentPage { get => ViewState["RegisterPage"] == null ? 0 : Convert.ToInt32(ViewState["RegisterPage"]); set => ViewState["RegisterPage"] = Math.Max(0, value); }
         private bool? canEdit;
         private bool CanEdit => canEdit ?? (canEdit = AssetAccess.IsSystemAdministrator).Value;
 
-        protected void Page_Load(object sender, EventArgs e) { if (!IsPostBack) Bind(); }
+        protected void Page_Load(object sender, EventArgs e) { if (!IsPostBack) { BindFilters(); Bind(); } }
         protected void Search_Click(object sender, EventArgs e) { CurrentPage = 0; Bind(); }
         private void Bind()
         {
             int totalRows;
-            var table = service.GetRegisterPage(txtSearch.Text.Trim(), CurrentPage, PageSize, out totalRows);
+            var table = service.GetRegisterPage(txtSearch.Text.Trim(), ddlRoomFilter.SelectedValue, ddlDepartmentFilter.SelectedValue, ddlCustodianFilter.SelectedValue, CurrentPage, PageSize, out totalRows);
             if (table.Rows.Count == 0 && CurrentPage > 0) { CurrentPage--; Bind(); return; }
             gridAssets.DataSource = table; gridAssets.DataBind();
             var totalPages = totalRows == 0 ? 0 : (int)Math.Ceiling(totalRows / (double)PageSize);
@@ -40,6 +40,18 @@ namespace BC.FixedAsset.Web.FixedAsset.Register
         }
         protected void PreviousPage_Click(object sender, EventArgs e) { CurrentPage--; Bind(); }
         protected void NextPage_Click(object sender, EventArgs e) { CurrentPage++; Bind(); }
+        private void BindFilters()
+        {
+            var table = service.RegisterFilterOptions();
+            BindFilter(ddlRoomFilter, table, "Room", "ทุกห้อง"); BindFilter(ddlDepartmentFilter, table, "Department", "ทุกแผนก"); BindFilter(ddlCustodianFilter, table, "Custodian", "ผู้ดูแลทั้งหมด");
+        }
+        private static void BindFilter(DropDownList list, System.Data.DataTable table, string filterType, string allText)
+        {
+            list.Items.Clear(); list.Items.Add(new ListItem(allText, ""));
+            var values = new System.Collections.Generic.SortedSet<string>(StringComparer.CurrentCultureIgnoreCase);
+            foreach (System.Data.DataRow row in table.Rows) { if (!string.Equals(Convert.ToString(row["FilterType"]), filterType, StringComparison.Ordinal)) continue; var value = Convert.ToString(row["Value"]).Trim(); if (value.Length > 0) values.Add(value); }
+            foreach (var value in values) list.Items.Add(new ListItem(value, value));
+        }
 
         protected void Grid_RowDataBound(object sender, GridViewRowEventArgs e)
         {
