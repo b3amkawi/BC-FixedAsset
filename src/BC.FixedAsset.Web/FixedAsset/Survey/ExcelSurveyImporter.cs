@@ -14,7 +14,16 @@ namespace BC.FixedAsset.Web.FixedAsset.Survey
 {
     internal sealed class ExcelImportResult { public int Imported,Skipped,Images; }
     internal sealed class ExcelPreviewResult { public List<ExcelPreviewRow> Rows=new List<ExcelPreviewRow>(); public int Ready,Duplicates,Images; public bool HasErrors; }
-    internal sealed class ExcelPreviewRow { public int RowNumber,ImageCount; public string AssetName,SurveyDate,Location,Status,Error; }
+    internal sealed class ExcelPreviewRow
+    {
+        public int RowNumber { get; set; }
+        public int ImageCount { get; set; }
+        public string AssetName { get; set; }
+        public string SurveyDate { get; set; }
+        public string Location { get; set; }
+        public string Status { get; set; }
+        public string Error { get; set; }
+    }
     internal sealed class ImportImage { public string Type,Name,ContentType; public byte[] Data; }
     internal sealed class PreparedImport { public ExcelPreviewResult Preview=new ExcelPreviewResult(); public List<Tuple<AssetSurvey,string,List<ImportImage>>> Rows=new List<Tuple<AssetSurvey,string,List<ImportImage>>>(); }
 
