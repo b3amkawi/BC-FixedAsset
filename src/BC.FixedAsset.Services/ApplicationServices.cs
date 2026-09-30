@@ -96,6 +96,7 @@ namespace BC.FixedAsset.Services
             if(!string.IsNullOrEmpty(old)){var oldFull=Path.GetFullPath(Path.Combine(uploadRoot,old.Replace('/',Path.DirectorySeparatorChar)));if(oldFull.StartsWith(Path.GetFullPath(uploadRoot),StringComparison.OrdinalIgnoreCase)&&File.Exists(oldFull))File.Delete(oldFull);}
         }
         public DataTable GetReference(string type) => _fixedAssets.GetReference(type);
+        public bool SurveyNumberExists(string surveyNo) => _surveys.SurveyNumberExists(surveyNo);
         public DashboardSummary GetDashboard() => _fixedAssets.GetDashboard();
         public DataTable GetRegister(string query) => _fixedAssets.GetRegister(query);
         public DataTable GetRegisterPage(string query, string room, string department, string custodian, int pageIndex, int pageSize, out int totalRows) => _fixedAssets.GetRegisterPage(query, room, department, custodian, pageIndex, pageSize, out totalRows);

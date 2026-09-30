@@ -4,6 +4,7 @@ using System.Data;
 using System.Text;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using System.IO;
 
 namespace BC.FixedAsset.Web.FixedAsset.Survey
 {
@@ -12,7 +13,8 @@ namespace BC.FixedAsset.Web.FixedAsset.Survey
         protected TextBox txtSearch;
         protected DropDownList ddlStatus, ddlRoomFilter, ddlDepartmentFilter, ddlCustodianFilter;
         protected GridView gridSurvey;
-        protected Button btnSearch, btnExport, btnClose, btnPreviousPage, btnNextPage;
+        protected Button btnSearch, btnExport, btnImport, btnClose, btnPreviousPage, btnNextPage;
+        protected FileUpload fileImport;
         protected Label lblMessage, lblPageInfo;
         protected Panel pnlDetail;
         protected Literal litDetail;
@@ -160,6 +162,17 @@ namespace BC.FixedAsset.Web.FixedAsset.Survey
         private static string Money(object value) => value == DBNull.Value ? "" : "฿" + Convert.ToDecimal(value).ToString("N2");
 
         protected void Close_Click(object sender, EventArgs e) { pnlDetail.Visible = false; }
+        protected void Import_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!fileImport.HasFile) throw new ArgumentException("กรุณาเลือกไฟล์ Excel");
+                var result = new ExcelSurveyImporter(service, AssetAccess).Import(fileImport.PostedFile);
+                CurrentPage = 0; BindFilters(); Bind();
+                lblMessage.Text = Server.HtmlEncode(string.Format("นำเข้าสำเร็จ {0:N0} รายการ, ข้ามข้อมูลซ้ำ {1:N0} รายการ", result.Imported, result.Skipped));
+            }
+            catch (Exception ex) { lblMessage.Text = Server.HtmlEncode(ex.Message); }
+        }
         protected void Export_Click(object sender, EventArgs e)
         {
             var table = FilteredData().ToTable(); Response.Clear(); Response.ContentType = "application/vnd.ms-excel";
