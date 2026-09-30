@@ -8,7 +8,6 @@ namespace BC.FixedAsset.Data
 {
     public sealed partial class AssetSurveyRepository
     {
-        public bool SurveyNumberExists(string surveyNo){using(var c=Db.OpenConnection())using(var cmd=new SqlCommand("SELECT CASE WHEN EXISTS(SELECT 1 FROM fa.AssetSurveys WHERE SurveyNo=@SurveyNo) THEN 1 ELSE 0 END",c)){cmd.Parameters.Add(Db.Parameter("@SurveyNo",surveyNo??string.Empty,SqlDbType.NVarChar,50));return Convert.ToBoolean(cmd.ExecuteScalar());}}
         public AssetSurvey Get(long id, SurveyAccessContext access)
         {
             const string sql = @"SELECT s.* FROM fa.AssetSurveys s WHERE s.SurveyId=@Id AND
