@@ -12,12 +12,12 @@ namespace BC.FixedAsset.Web.FixedAsset.Survey
     {
         protected TextBox txtSearch;
         protected DropDownList ddlStatus, ddlRoomFilter, ddlDepartmentFilter, ddlCustodianFilter;
-        protected GridView gridSurvey;
-        protected Button btnSearch, btnExport, btnImport, btnClose, btnPreviousPage, btnNextPage;
+        protected GridView gridSurvey, gridImportPreview;
+        protected Button btnSearch, btnExport, btnImport, btnConfirmImport, btnCancelImport, btnCancelImportTop, btnClose, btnPreviousPage, btnNextPage;
         protected FileUpload fileImport;
         protected Label lblMessage, lblPageInfo;
-        protected Panel pnlDetail;
-        protected Literal litDetail;
+        protected Panel pnlDetail, pnlImportPreview;
+        protected Literal litDetail, litImportSummary;
         protected Repeater repImages;
         private readonly AssetSurveyService service = new AssetSurveyService();
 
@@ -167,12 +167,16 @@ namespace BC.FixedAsset.Web.FixedAsset.Survey
             try
             {
                 if (!fileImport.HasFile) throw new ArgumentException("กรุณาเลือกไฟล์ Excel");
-                var result = new ExcelSurveyImporter(service, AssetAccess).Import(fileImport.PostedFile);
-                CurrentPage = 0; BindFilters(); Bind();
-                lblMessage.Text = Server.HtmlEncode(string.Format("นำเข้าสำเร็จ {0:N0} รายการ, ข้ามข้อมูลซ้ำ {1:N0} รายการ", result.Imported, result.Skipped));
+                var ext=Path.GetExtension(fileImport.FileName).ToLowerInvariant();if(ext!=".xlsx"&&ext!=".xlsm")throw new ArgumentException("รองรับเฉพาะไฟล์ .xlsx และ .xlsm");if(fileImport.PostedFile.ContentLength>150*1024*1024)throw new ArgumentException("ไฟล์ต้องมีขนาดไม่เกิน 150 MB");
+                var folder=Server.MapPath("~/App_Data/SurveyImports");Directory.CreateDirectory(folder);var path=Path.Combine(folder,Guid.NewGuid().ToString("N")+ext);fileImport.SaveAs(path);ViewState["ImportPath"]=path;
+                var preview=new ExcelSurveyImporter(service,AssetAccess).Preview(path);gridImportPreview.DataSource=preview.Rows;gridImportPreview.DataBind();
+                litImportSummary.Text=string.Format("<p class='muted'>พร้อมนำเข้า <b>{0:N0}</b> · ข้อมูลซ้ำ <b>{1:N0}</b> · รูปภาพ <b>{2:N0}</b></p>",preview.Ready,preview.Duplicates,preview.Images);btnConfirmImport.Enabled=!preview.HasErrors&&preview.Ready>0;pnlImportPreview.Visible=true;
             }
-            catch (Exception ex) { lblMessage.Text = Server.HtmlEncode(ex.Message); }
+            catch (Exception ex) { CleanupImport(); lblMessage.Text = Server.HtmlEncode(ex.Message); }
         }
+        protected void ConfirmImport_Click(object sender,EventArgs e){try{var path=Convert.ToString(ViewState["ImportPath"]);if(string.IsNullOrEmpty(path)||!File.Exists(path))throw new InvalidOperationException("ไฟล์ Import หมดอายุ กรุณาเลือกไฟล์ใหม่");var result=new ExcelSurveyImporter(service,AssetAccess).Import(path);CleanupImport();CurrentPage=0;BindFilters();Bind();lblMessage.Text=Server.HtmlEncode(string.Format("นำเข้าสำเร็จ {0:N0} รายการ, รูปภาพ {1:N0} รูป, ข้ามข้อมูลซ้ำ {2:N0} รายการ",result.Imported,result.Images,result.Skipped));}catch(Exception ex){pnlImportPreview.Visible=true;lblMessage.Text=Server.HtmlEncode(ex.Message);}}
+        protected void CancelImport_Click(object sender,EventArgs e){CleanupImport();}
+        private void CleanupImport(){var path=Convert.ToString(ViewState["ImportPath"]);if(!string.IsNullOrEmpty(path)&&File.Exists(path))File.Delete(path);ViewState.Remove("ImportPath");pnlImportPreview.Visible=false;}
         protected void Export_Click(object sender, EventArgs e)
         {
             var table = FilteredData().ToTable(); Response.Clear(); Response.ContentType = "application/vnd.ms-excel";

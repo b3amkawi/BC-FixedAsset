@@ -95,6 +95,12 @@ namespace BC.FixedAsset.Services
             var old=_surveys.SaveAttachment(surveyId,type,Path.GetFileName(file.FileName),file.ContentType,file.ContentLength,content,access);
             if(!string.IsNullOrEmpty(old)){var oldFull=Path.GetFullPath(Path.Combine(uploadRoot,old.Replace('/',Path.DirectorySeparatorChar)));if(oldFull.StartsWith(Path.GetFullPath(uploadRoot),StringComparison.OrdinalIgnoreCase)&&File.Exists(oldFull))File.Delete(oldFull);}
         }
+        public void SaveAttachmentBytes(long surveyId,string type,string fileName,string contentType,byte[] content,SurveyAccessContext access)
+        {
+            if(content==null||content.Length==0)return;if(content.Length>5*1024*1024)throw new ArgumentException("Each image must not exceed 5 MB.");
+            var extension=Path.GetExtension(fileName).ToLowerInvariant();if(extension!=".jpg"&&extension!=".jpeg"&&extension!=".png"&&extension!=".webp")throw new ArgumentException("Only JPG, PNG and WEBP images are allowed.");
+            _surveys.SaveAttachment(surveyId,type,Path.GetFileName(fileName),contentType,content.Length,content,access);
+        }
         public DataTable GetReference(string type) => _fixedAssets.GetReference(type);
         public bool SurveyNumberExists(string surveyNo) => _surveys.SurveyNumberExists(surveyNo);
         public DashboardSummary GetDashboard() => _fixedAssets.GetDashboard();
