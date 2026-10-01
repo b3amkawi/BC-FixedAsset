@@ -167,7 +167,7 @@ namespace BC.FixedAsset.Web.FixedAsset.Survey
             try
             {
                 if (!fileImport.HasFile) throw new ArgumentException("กรุณาเลือกไฟล์ Excel");
-                var ext=Path.GetExtension(fileImport.FileName).ToLowerInvariant();if(ext!=".xlsx"&&ext!=".xlsm")throw new ArgumentException("รองรับเฉพาะไฟล์ .xlsx และ .xlsm");if(fileImport.PostedFile.ContentLength>150*1024*1024)throw new ArgumentException("ไฟล์ต้องมีขนาดไม่เกิน 150 MB");
+                var ext=Path.GetExtension(fileImport.FileName).ToLowerInvariant();if(ext!=".xlsx"&&ext!=".xlsm")throw new ArgumentException("รองรับเฉพาะไฟล์ .xlsx และ .xlsm");if(fileImport.PostedFile.ContentLength>300*1024*1024)throw new ArgumentException("ไฟล์ต้องมีขนาดไม่เกิน 300 MB");
                 var folder=Server.MapPath("~/App_Data/SurveyImports");Directory.CreateDirectory(folder);var path=Path.Combine(folder,Guid.NewGuid().ToString("N")+ext);fileImport.SaveAs(path);ViewState["ImportPath"]=path;
                 var preview=new ExcelSurveyImporter(service,AssetAccess).Preview(path);gridImportPreview.DataSource=preview.Rows;gridImportPreview.DataBind();
                 litImportSummary.Text=string.Format("<p class='muted'>พร้อมนำเข้า <b>{0:N0}</b> รายการ · รูปภาพ <b>{1:N0}</b> รูป</p>",preview.Ready,preview.Images);btnConfirmImport.Enabled=!preview.HasErrors&&preview.Ready>0;pnlImportPreview.Visible=true;
