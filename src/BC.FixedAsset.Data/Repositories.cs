@@ -262,5 +262,40 @@ namespace BC.FixedAsset.Data
                 var table = new DataTable(); using (var adapter = new SqlDataAdapter(command)) adapter.Fill(table); return table;
             }
         }
+
+        public DataSet Export(string query, string status, SurveyAccessContext access, string room, string department, string custodian)
+        {
+            const string sql = @"SELECT s.SurveyId,s.SurveyNo,s.SurveyDate,s.Status,s.FixedAssetNo,s.AssetName,s.WidthCm,s.LengthCm,s.HeightCm,s.WeightKg,
+                cat.CategoryCode,cat.CategoryName,d.DepartmentCode,d.DepartmentName,COALESCE(NULLIF(s.CustodianName,''),u.DisplayName) Custodian,
+                con.ConditionName,s.Quantity,m.UomCode,b.BuildingName,fl.FloorName,rm.RoomName,s.Brand,s.ModelDescription,s.SerialNumber,s.OwnershipType,
+                s.ReceivedDate,s.PurchaseOrderNo,s.EstimatedValue,creator.DisplayName Surveyor,s.Remark,s.CreatedUtc,s.ModifiedUtc
+                INTO #ExportSurveys
+                FROM fa.AssetSurveys s INNER JOIN mst.Departments d ON d.DepartmentId=s.DepartmentId
+                INNER JOIN mst.AssetCategories cat ON cat.CategoryId=s.CategoryId INNER JOIN mst.AssetConditions con ON con.ConditionId=s.ConditionId
+                LEFT JOIN sec.Users u ON u.UserId=s.CustodianUserId LEFT JOIN sec.Users creator ON creator.UserId=s.SurveyorUserId
+                LEFT JOIN mst.Uoms m ON m.UomId=s.UomId LEFT JOIN mst.Buildings b ON b.BuildingId=s.BuildingId
+                LEFT JOIN mst.Floors fl ON fl.FloorId=s.FloorId LEFT JOIN mst.Rooms rm ON rm.RoomId=s.RoomId
+                WHERE (@Query='' OR s.SurveyNo LIKE '%'+@Query+'%' OR ISNULL(s.FixedAssetNo,'') LIKE '%'+@Query+'%' OR s.AssetName LIKE '%'+@Query+'%' OR ISNULL(s.SerialNumber,'') LIKE '%'+@Query+'%' OR COALESCE(NULLIF(s.CustodianName,''),u.DisplayName,'') LIKE '%'+@Query+'%')
+                  AND (@Status='' OR s.Status=@Status) AND (@Room='' OR rm.RoomName=@Room) AND (@Department='' OR d.DepartmentName=@Department)
+                  AND (@Custodian='' OR COALESCE(NULLIF(s.CustodianName,''),u.DisplayName)=@Custodian)
+                  AND (@IsAdmin=1 OR s.SurveyorUserId=@UserId);
+                SELECT * FROM #ExportSurveys ORDER BY ModifiedUtc DESC,SurveyId DESC;
+                SELECT a.AttachmentId,a.SurveyId,a.AttachmentType,a.OriginalFileName,a.RelativePath,a.ContentType,a.FileContent
+                FROM fa.AssetSurveyAttachments a INNER JOIN #ExportSurveys s ON s.SurveyId=a.SurveyId
+                WHERE a.AttachmentType IN('ACTUAL','SERIAL','OTHER') ORDER BY a.SurveyId,a.AttachmentId;";
+            using (var connection = Db.OpenConnection()) using (var command = new SqlCommand(sql, connection))
+            {
+                command.CommandTimeout = 120;
+                command.Parameters.Add(Db.Parameter("@Query", query ?? string.Empty, SqlDbType.NVarChar, 150));
+                command.Parameters.Add(Db.Parameter("@Status", status ?? string.Empty, SqlDbType.NVarChar, 30));
+                command.Parameters.Add(Db.Parameter("@Room", room ?? string.Empty, SqlDbType.NVarChar, 200));
+                command.Parameters.Add(Db.Parameter("@Department", department ?? string.Empty, SqlDbType.NVarChar, 200));
+                command.Parameters.Add(Db.Parameter("@Custodian", custodian ?? string.Empty, SqlDbType.NVarChar, 250));
+                command.Parameters.Add(Db.Parameter("@UserId", access.UserId, SqlDbType.Int));
+                command.Parameters.Add(Db.Parameter("@IsAdmin", access.IsSystemAdministrator, SqlDbType.Bit));
+                var data = new DataSet(); using (var adapter = new SqlDataAdapter(command)) adapter.Fill(data);
+                data.Tables[0].TableName = "Surveys"; data.Tables[1].TableName = "Attachments"; return data;
+            }
+        }
     }
 }

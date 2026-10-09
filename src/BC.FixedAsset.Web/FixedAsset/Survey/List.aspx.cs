@@ -1,7 +1,7 @@
 using BC.FixedAsset.Services;
 using System;
 using System.Data;
-using System.Text;
+using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using System.IO;
@@ -25,7 +25,6 @@ namespace BC.FixedAsset.Web.FixedAsset.Survey
         private const int PageSize = 20;
         private int CurrentPage { get => ViewState["SurveyPage"] == null ? 0 : Convert.ToInt32(ViewState["SurveyPage"]); set => ViewState["SurveyPage"] = Math.Max(0, value); }
         protected void Search_Click(object sender, EventArgs e) { CurrentPage = 0; Bind(); }
-        private DataTable Data() => service.Search(txtSearch.Text, ddlStatus.SelectedValue, AssetAccess);
         private string SortExpression { get => Convert.ToString(ViewState["SurveySortExpression"]); set => ViewState["SurveySortExpression"] = value; }
         private string SortDirection { get => Convert.ToString(ViewState["SurveySortDirection"]); set => ViewState["SurveySortDirection"] = value; }
 
@@ -40,17 +39,6 @@ namespace BC.FixedAsset.Web.FixedAsset.Survey
             lblPageInfo.Text = totalRows == 0 ? "ไม่พบข้อมูล" : string.Format("หน้า {0} / {1} · ทั้งหมด {2:N0} รายการ", CurrentPage + 1, totalPages, totalRows);
             btnPreviousPage.Enabled = CurrentPage > 0;
             btnNextPage.Enabled = CurrentPage + 1 < totalPages;
-        }
-
-        private DataView FilteredData()
-        {
-            var view = Data().DefaultView;
-            var filters = new System.Collections.Generic.List<string>();
-            AddFilter(filters, "RoomName", ddlRoomFilter.SelectedValue);
-            AddFilter(filters, "DepartmentName", ddlDepartmentFilter.SelectedValue);
-            AddFilter(filters, "Custodian", ddlCustodianFilter.SelectedValue);
-            view.RowFilter = string.Join(" AND ", filters);
-            return view;
         }
 
         private void BindFilters()
@@ -69,11 +57,6 @@ namespace BC.FixedAsset.Web.FixedAsset.Survey
             foreach (var value in values) list.Items.Add(new ListItem(value, value));
         }
 
-        private static void AddFilter(System.Collections.Generic.ICollection<string> filters, string column, string value)
-        {
-            if (!string.IsNullOrWhiteSpace(value)) filters.Add("[" + column + "] = '" + value.Replace("'", "''") + "'");
-        }
-
         protected void Grid_Sorting(object sender, GridViewSortEventArgs e)
         {
             SortDirection = SortExpression == e.SortExpression && SortDirection == "ASC" ? "DESC" : "ASC";
@@ -84,23 +67,6 @@ namespace BC.FixedAsset.Web.FixedAsset.Survey
 
         protected void PreviousPage_Click(object sender, EventArgs e) { CurrentPage--; Bind(); }
         protected void NextPage_Click(object sender, EventArgs e) { CurrentPage++; Bind(); }
-
-        private static string SortClause(string expression, string direction)
-        {
-            var suffix = direction == "DESC" ? " DESC" : " ASC";
-            switch (expression)
-            {
-                case "SurveyNo": return "SurveyNo" + suffix;
-                case "AssetName": return "AssetName" + suffix + ", SerialNumber" + suffix;
-                case "Dimensions": return "WidthCm" + suffix + ", LengthCm" + suffix + ", HeightCm" + suffix;
-                case "WeightKg": return "WeightKg" + suffix;
-                case "Quantity": return "Quantity" + suffix + ", UomCode" + suffix;
-                case "Location": return "BuildingName" + suffix + ", FloorName" + suffix + ", RoomName" + suffix;
-                case "Custodian": return "Custodian" + suffix;
-                case "CreatedByName": return "CreatedByName" + suffix;
-                default: return "SurveyNo ASC";
-            }
-        }
 
         protected void Grid_RowDataBound(object sender, GridViewRowEventArgs e)
         {
@@ -179,11 +145,16 @@ namespace BC.FixedAsset.Web.FixedAsset.Survey
         private void CleanupImport(){var path=Convert.ToString(ViewState["ImportPath"]);if(!string.IsNullOrEmpty(path)&&File.Exists(path))File.Delete(path);ViewState.Remove("ImportPath");pnlImportPreview.Visible=false;}
         protected void Export_Click(object sender, EventArgs e)
         {
-            var table = FilteredData().ToTable(); Response.Clear(); Response.ContentType = "application/vnd.ms-excel";
-            Response.AddHeader("Content-Disposition", "attachment;filename=AssetSurvey-" + DateTime.Now.ToString("yyyyMMdd-HHmm") + ".xls");
-            var content = new StringBuilder(); foreach (DataColumn column in table.Columns) content.Append(column.ColumnName).Append('\t'); content.AppendLine();
-            foreach (DataRow row in table.Rows) { foreach (var value in row.ItemArray) content.Append(Convert.ToString(value).Replace("\t", " ")).Append('\t'); content.AppendLine(); }
-            Response.ContentEncoding = Encoding.UTF8; Response.Write("\uFEFF" + content); Response.End();
+            try
+            {
+                var data=service.Export(txtSearch.Text,ddlStatus.SelectedValue,AssetAccess,ddlRoomFilter.SelectedValue,ddlDepartmentFilter.SelectedValue,ddlCustodianFilter.SelectedValue);
+                var root=Server.MapPath(System.Configuration.ConfigurationManager.AppSettings["UploadRoot"]);
+                var content=new ExcelSurveyExporter(data,root).Build(DateTimeOffset.Now);
+                Response.Clear();Response.Buffer=true;Response.ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                Response.AddHeader("Content-Disposition","attachment;filename=Asset_System_Export_"+DateTime.Now.ToString("yyyyMMdd")+".xlsx");
+                Response.AddHeader("Content-Length",content.Length.ToString());Response.BinaryWrite(content);Response.Flush();HttpContext.Current.ApplicationInstance.CompleteRequest();
+            }
+            catch(Exception ex){lblMessage.Text=Server.HtmlEncode("ส่งออก Excel ไม่สำเร็จ: "+ex.Message);}
         }
     }
 }

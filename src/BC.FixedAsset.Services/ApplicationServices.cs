@@ -66,6 +66,7 @@ namespace BC.FixedAsset.Services
         private readonly AssetSurveyRepository _surveys = new AssetSurveyRepository();
         private readonly FixedAssetRepository _fixedAssets = new FixedAssetRepository();
         public DataTable Search(string query, string status, SurveyAccessContext access, string queueStatus = "") => _surveys.Search(query, status, access, queueStatus);
+        public DataSet Export(string query,string status,SurveyAccessContext access,string room,string department,string custodian) => _surveys.Export(query,status,access,room,department,custodian);
         public DataTable SearchPage(string query, string status, SurveyAccessContext access, string room, string department, string custodian, string sortExpression, string sortDirection, int pageIndex, int pageSize, string queueStatus, out int totalRows) => _surveys.SearchPage(query, status, access, room, department, custodian, sortExpression, sortDirection, pageIndex, pageSize, queueStatus, out totalRows);
         public DataTable SurveyFilterOptions(SurveyAccessContext access, string queueStatus = "") => _surveys.SurveyFilterOptions(access, queueStatus);
         public AssetSurvey Get(long id, SurveyAccessContext access) => _surveys.Get(id, access);
